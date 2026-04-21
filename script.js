@@ -517,12 +517,9 @@ function renderOutput(text) {
   setHidden(document.getElementById('outputCard'), false);
   setHidden(document.getElementById('manualCard'), true);
 
-  // Show image section if a provider is selected
-  const showImageSection = state.imageProvider !== 'none';
-  setHidden(document.getElementById('imageSection'), !showImageSection);
-  if (showImageSection) {
-    resetImageUI();
-  }
+  // Always show the image section once a post is generated
+  setHidden(document.getElementById('imageSection'), false);
+  resetImageUI();
 
   document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -532,6 +529,13 @@ function resetImageUI() {
   setHidden(document.getElementById('generatedImage'), true);
   setHidden(document.getElementById('imageLoading'), true);
   setHidden(document.getElementById('imageActions'), true);
+
+  const hint = document.getElementById('imagePlaceholderText');
+  if (hint) {
+    hint.textContent = state.imageProvider === 'none'
+      ? 'Open AI Settings → Image Generation to enable this feature'
+      : 'Click "Generate Image" to create a visual for your post';
+  }
 }
 
 function updatePreview(text) {
@@ -729,6 +733,12 @@ function collectFormData() {
 async function handleGenerateImage() {
   if (!state.lastPost) {
     showToast('Generate a post first', 'error');
+    return;
+  }
+
+  if (state.imageProvider === 'none') {
+    showToast('Select an image provider in AI Settings first', 'error');
+    openSettings();
     return;
   }
 
