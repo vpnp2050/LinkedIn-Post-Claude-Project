@@ -391,32 +391,28 @@ function buildImagePrompt(postText) {
 }
 
 async function generateWithStabilityAI(prompt, apiKey) {
-  const engineId = 'stable-diffusion-xl-1024-v1-0';
-  const url = `https://api.stability.ai/v1/generate/${engineId}`;
+  const url = `https://api.stability.ai/v1/generate/stable-diffusion-xl-1024-v1-0`;
+
+  const formData = new FormData();
+  formData.append('text_prompts', JSON.stringify([{ text: prompt, weight: 1 }]));
+  formData.append('cfg_scale', '7');
+  formData.append('height', '1024');
+  formData.append('width', '1024');
+  formData.append('samples', '1');
+  formData.append('steps', '30');
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      text_prompts: [{ text: prompt, weight: 1 }],
-      cfg_scale: 7,
-      height: 576,
-      width: 1024,
-      samples: 1,
-      steps: 30,
-    }),
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+    body: formData,
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || `Stability AI error (${res.status})`);
+  if (!res.ok) throw new Error(data.message || `Stability API error: ${res.status}`);
   if (data.artifacts?.[0]?.base64) {
     return `data:image/png;base64,${data.artifacts[0].base64}`;
   }
-  throw new Error('No image generated');
+  throw new Error('No image data returned from Stability AI');
 }
 
 async function generateWithDALLE(prompt, apiKey) {
@@ -444,6 +440,8 @@ async function generateWithDALLE(prompt, apiKey) {
 }
 
 async function generateWithReplicate(prompt, apiKey) {
+  const modelVersion = 'b6c1372f06e472b0b25c6b44f8100cc4e460cc58cb9722eaa89340b66b07259d';
+
   const res = await fetch('https://api.replicate.com/v1/predictions', {
     method: 'POST',
     headers: {
@@ -451,7 +449,7 @@ async function generateWithReplicate(prompt, apiKey) {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      version: 'a1c99cb771e0730651f53b2b8092582890123d2249a6ba63b142512ea9a3649c',
+      version: modelVersion,
       input: {
         prompt,
         num_inference_steps: 30,
@@ -463,25 +461,33 @@ async function generateWithReplicate(prompt, apiKey) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail?.[0]?.msg || `Replicate error (${res.status})`);
+  if (!res.ok) {
+    const msg = data.detail?.[0]?.msg || data.detail || JSON.stringify(data);
+    throw new Error(`Replicate error (${res.status}): ${msg}`);
+  }
 
   const predictionId = data.id;
+  if (!predictionId) throw new Error('No prediction ID returned');
 
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 120; i++) {
+    await new Promise(r => setTimeout(r, 500));
+
     const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
     const checkData = await checkRes.json();
 
     if (checkData.status === 'succeeded') {
-      if (checkData.output?.[0]) return checkData.output[0];
-      throw new Error('No image in response');
+      if (checkData.output && Array.isArray(checkData.output) && checkData.output[0]) {
+        return checkData.output[0];
+      }
+      throw new Error('No image in Replicate response');
     }
-    if (checkData.status === 'failed') throw new Error('Image generation failed');
-
-    await new Promise(r => setTimeout(r, 1000));
+    if (checkData.status === 'failed') {
+      throw new Error(`Replicate generation failed: ${checkData.error}`);
+    }
   }
-  throw new Error('Image generation timed out');
+  throw new Error('Image generation timed out (2 mins)');
 }
 
 async function generateImage(postText) {
