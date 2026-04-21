@@ -1,22 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>LinkedIn Post & Image Generator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Post Creator AI</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>LinkedIn Post & Image Generator</h1>
-        <textarea id="postContent" placeholder="Write your LinkedIn post here..."></textarea>
-        <button id="generateImageBtn">Generate Image</button>
-        <button id="generatePostBtn">Generate Post</button>
-        <div id="outputSection">
-            <img id="generatedImage" src="" alt="Generated Image" style="display: none;" />
-            <div id="generatedPost" style="display: none;"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        <span>Post Creator AI</span>
+      </div>
+      <div class="header-right">
+        <div class="provider-badge" id="providerBadge">
+          <span class="provider-dot" id="providerDot"></span>
+          <span id="providerLabel">No AI Selected</span>
         </div>
+        <button class="btn-settings" id="settingsToggle" title="AI Provider Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          AI Settings
+        </button>
+      </div>
     </div>
-    <script src="script.js"></script>
+  </header>
+
+  <!-- Settings Panel -->
+  <div class="settings-overlay hidden" id="settingsOverlay"></div>
+  <aside class="settings-panel hidden" id="settingsPanel">
+    <div class="settings-header">
+      <h2>AI Provider Settings</h2>
+      <button class="btn-close" id="settingsClose">&times;</button>
+    </div>
+
+    <div class="settings-body">
+      <p class="settings-hint">Choose your AI provider. API keys are stored locally in your browser only.</p>
+
+      <!-- Provider Cards -->
+      <div class="provider-grid">
+        <div class="provider-card" data-provider="claude-api">
+          <div class="provider-card-icon">🤖</div>
+          <div class="provider-card-name">Claude API</div>
+          <div class="provider-card-sub">Anthropic</div>
+        </div>
+        <div class="provider-card" data-provider="claude-manual">
+          <div class="provider-card-icon">📋</div>
+          <div class="provider-card-name">Claude.ai</div>
+          <div class="provider-card-sub">Manual / Pro</div>
+        </div>
+        <div class="provider-card" data-provider="gemini">
+          <div class="provider-card-icon">✨</div>
+          <div class="provider-card-name">Gemini</div>
+          <div class="provider-card-sub">Google AI Studio</div>
+        </div>
+        <div class="provider-card" data-provider="openai">
+          <div class="provider-card-icon">🧠</div>
+          <div class="provider-card-name">ChatGPT</div>
+          <div class="provider-card-sub">OpenAI</div>
+        </div>
+        <div class="provider-card" data-provider="mistral">
+          <div class="provider-card-icon">💫</div>
+          <div class="provider-card-name">Mistral</div>
+          <div class="provider-card-sub">Mistral AI</div>
+        </div>
+        <div class="provider-card" data-provider="groq">
+          <div class="provider-card-icon">⚡</div>
+          <div class="provider-card-name">Groq</div>
+          <div class="provider-card-sub">Fast inference</div>
+        </div>
+      </div>
+
+      <!-- API Key Section -->
+      <div class="api-key-section" id="apiKeySection">
+        <label class="form-label" id="apiKeyLabel">API Key</label>
+        <div class="api-key-row">
+          <input type="password" class="form-input" id="apiKeyInput" placeholder="Enter your API key..." autocomplete="off">
+          <button class="btn-icon" id="toggleKeyVisibility" title="Show/Hide">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="api-key-actions">
+          <button class="btn-primary btn-sm" id="saveKeyBtn">Save Key</button>
+          <button class="btn-danger btn-sm" id="clearKeyBtn">Clear Key</button>
+          <a class="api-link" id="apiLink" href="#" target="_blank" rel="noopener">Get API Key</a>
+        </div>
+        <div class="key-status" id="keyStatus"></div>
+      </div>
+
+      <!-- Model Selector -->
+      <div class="model-section" id="modelSection">
+        <label class="form-label">Model</label>
+        <select class="form-select" id="modelSelect"></select>
+      </div>
+
+      <!-- Manual Mode Info -->
+      <div class="manual-info hidden" id="manualInfo">
+        <div class="info-box">
+          <strong>How Manual Mode Works:</strong>
+          <ol>
+            <li>Fill in your post details and click "Build Prompt"</li>
+            <li>Copy the generated prompt</li>
+            <li>Paste it into <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a></li>
+            <li>Paste Claude's response back here to format and preview</li>
+          </ol>
+        </div>
+      </div>
+
+      <button class="btn-primary settings-save" id="applySettings">Apply &amp; Close</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+
+      <!-- Form Card -->
+      <section class="card" id="formCard">
+        <div class="card-header">
+          <h1 class="card-title">Create Your LinkedIn Post</h1>
+          <p class="card-sub">Powered by AI — craft posts that engage and inspire</p>
+        </div>
+
+        <!-- Topic -->
+        <div class="form-group">
+          <label class="form-label" for="topicInput">What do you want to post about? <span class="required">*</span></label>
+          <textarea id="topicInput" class="form-textarea" rows="4"
+            placeholder="Describe your topic, experience, achievement, or key message you want to share..."></textarea>
+        </div>
+
+        <!-- Tone -->
+        <div class="form-group">
+          <label class="form-label">Tone &amp; Style</label>
+          <div class="tone-grid" id="toneGrid">
+            <button class="tone-btn active" data-tone="professional">Professional</button>
+            <button class="tone-btn" data-tone="casual">Casual</button>
+            <button class="tone-btn" data-tone="inspirational">Inspirational</button>
+            <button class="tone-btn" data-tone="educational">Educational</button>
+            <button class="tone-btn" data-tone="storytelling">Storytelling</button>
+            <button class="tone-btn" data-tone="thought-leadership">Thought Leadership</button>
+            <button class="tone-btn" data-tone="humorous">Humorous</button>
+            <button class="tone-btn" data-tone="motivational">Motivational</button>
+          </div>
+        </div>
+
+        <!-- Length + Audience row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="lengthSelect">Post Length</label>
+            <select class="form-select" id="lengthSelect">
+              <option value="short">Short (~150 words)</option>
+              <option value="medium" selected>Medium (~300 words)</option>
+              <option value="long">Long (~500 words)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="audienceInput">Target Audience</label>
+            <input type="text" class="form-input" id="audienceInput"
+              placeholder="e.g., Tech leaders, Marketers, Entrepreneurs...">
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="form-group">
+          <label class="form-label">Options</label>
+          <div class="toggles-row">
+            <label class="toggle-item">
+              <input type="checkbox" id="hashtagToggle" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Hashtags</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="emojiToggle" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Emojis</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="ctaToggle" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Call-to-Action</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="hookToggle" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span>Strong Hook</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Custom Instructions -->
+        <div class="form-group">
+          <label class="form-label" for="customInstructions">Additional Instructions <span class="optional">(optional)</span></label>
+          <textarea id="customInstructions" class="form-textarea" rows="2"
+            placeholder="e.g., Mention my company XYZ, include a specific stat, use first-person storytelling..."></textarea>
+        </div>
+
+        <!-- Generate Button -->
+        <button class="btn-generate" id="generateBtn">
+          <span class="btn-generate-icon" id="generateIcon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          <span id="generateBtnText">Generate LinkedIn Post</span>
+          <div class="spinner hidden" id="spinner"></div>
+        </button>
+
+        <div class="error-msg hidden" id="errorMsg"></div>
+      </section>
+
+      <!-- Output Card -->
+      <section class="card hidden" id="outputCard">
+        <div class="output-header">
+          <h2 class="card-title">Your LinkedIn Post</h2>
+          <div class="output-actions">
+            <span class="char-count" id="charCount">0 / 3,000</span>
+            <button class="btn-secondary btn-sm" id="regenerateBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Regenerate
+            </button>
+            <button class="btn-primary btn-sm" id="copyBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy Post
+            </button>
+          </div>
+        </div>
+
+        <!-- LinkedIn Preview -->
+        <div class="linkedin-preview">
+          <div class="lp-header">
+            <div class="lp-avatar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div class="lp-meta">
+              <div class="lp-name">Your Name</div>
+              <div class="lp-time">Just now &bull; <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg> Public</div>
+            </div>
+          </div>
+          <div class="lp-content" id="lpContent"></div>
+          <div class="lp-reactions">
+            <span>👍 ❤️ 💡</span>
+            <span class="lp-stats">42 reactions &bull; 8 comments</span>
+          </div>
+        </div>
+
+        <!-- Editable Area -->
+        <div class="form-group" style="margin-top:1.25rem">
+          <div class="edit-label-row">
+            <label class="form-label" for="editablePost">Edit Post</label>
+            <span class="edit-hint">Edits sync to preview above</span>
+          </div>
+          <textarea id="editablePost" class="form-textarea editable-post" rows="10"></textarea>
+        </div>
+      </section>
+
+      <!-- Manual Mode Card -->
+      <section class="card hidden" id="manualCard">
+        <div class="card-header">
+          <h2 class="card-title">Manual Mode — Claude.ai (Pro)</h2>
+          <p class="card-sub">Copy this prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a></p>
+        </div>
+
+        <div class="prompt-box-wrapper">
+          <div class="prompt-box" id="manualPromptBox"></div>
+          <button class="btn-copy-prompt" id="copyPromptBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy Prompt
+          </button>
+        </div>
+
+        <div class="manual-step2">
+          <h3 class="step-label">Step 2 — Paste Claude's Response</h3>
+          <textarea id="pasteResponse" class="form-textarea" rows="8"
+            placeholder="After getting your post from claude.ai, paste it here to preview and copy..."></textarea>
+          <button class="btn-primary" id="processResponseBtn">Preview &amp; Format Post</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
