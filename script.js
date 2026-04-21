@@ -1031,60 +1031,35 @@ function updateGenerateProgress(current, total) {
 // =========================================
 // .docx Export
 // =========================================
-async function handleExportDocx() {
+function handleExportDocx() {
   const posts = state.posts.filter(Boolean);
   if (!posts.length) { showToast('No posts to export', 'error'); return; }
 
-  if (typeof docx === 'undefined') {
-    showToast('docx library not loaded. Check your connection.', 'error');
+  if (typeof htmlDocx === 'undefined') {
+    showToast('Export library not loaded — check your internet connection and hard refresh.', 'error');
     return;
   }
-
-  const { Document, Paragraph, TextRun, HeadingLevel, PageBreak, AlignmentType, Packer } = docx;
 
   const topic = document.getElementById('topicInput').value.trim() || 'LinkedIn Posts';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const children = [
-    new Paragraph({
-      text: `LinkedIn Posts — ${topic}`,
-      heading: HeadingLevel.HEADING_1,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `Generated on ${dateStr}`, color: '666666', size: 20 })],
-      spacing: { after: 300 },
-    }),
-  ];
+  const postSections = posts.map((post, i) => {
+    const heading = posts.length > 1 ? `<h2 style="color:#1d2226;font-size:13pt;border-bottom:1px solid #ddd;padding-bottom:6px;margin-top:28px">Post ${i + 1}</h2>` : '';
+    const lines = post.split('\n').map(line =>
+      line.trim() ? `<p style="margin:6px 0;line-height:1.65">${line}</p>` : '<p style="margin:3px 0">&nbsp;</p>'
+    ).join('');
+    return heading + `<div style="margin-bottom:24px">${lines}</div>`;
+  }).join('<br style="page-break-after:always">');
 
-  posts.forEach((post, i) => {
-    if (posts.length > 1) {
-      children.push(
-        new Paragraph({
-          text: `Post ${i + 1}`,
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 200, after: 160 },
-        })
-      );
-    }
-
-    const lines = post.split('\n');
-    lines.forEach(line => {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: line || ' ', size: 24 })],
-          spacing: { after: line.trim() ? 160 : 80 },
-        })
-      );
-    });
-
-    if (i < posts.length - 1) {
-      children.push(new Paragraph({ children: [new PageBreak()] }));
-    }
-  });
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1d2226;margin:40px">
+<h1 style="color:#0A66C2;font-size:18pt;margin-bottom:4px">LinkedIn Posts</h1>
+<p style="color:#666;font-size:10pt;margin-top:0;margin-bottom:8px">${topic}</p>
+<p style="color:#999;font-size:9pt;margin-top:0;margin-bottom:28px">Generated on ${dateStr}</p>
+${postSections}
+</body></html>`;
 
   try {
-    const doc = new Document({ sections: [{ properties: {}, children }] });
-    const blob = await Packer.toBlob(doc);
+    const blob = htmlDocx.asBlob(html);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
