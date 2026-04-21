@@ -100,6 +100,43 @@ const LENGTH_MAP = {
   long: 'Long (around 450–520 words)',
 };
 
+const IMAGE_PROVIDERS = {
+  'none': {
+    name: 'Disabled',
+    label: 'No Images',
+    needsKey: false,
+    apiLink: '#',
+  },
+  'stability': {
+    name: 'Stability AI',
+    label: 'Stable Diffusion',
+    keyLabel: 'Stability AI API Key',
+    keyPlaceholder: 'sk-...',
+    apiLink: 'https://platform.stability.ai/account/keys',
+    needsKey: true,
+    imageSize: '1024x576',
+    samplingSteps: 30,
+  },
+  'openai-images': {
+    name: 'DALL-E (OpenAI)',
+    label: 'DALL-E',
+    keyLabel: 'OpenAI API Key',
+    keyPlaceholder: 'sk-...',
+    apiLink: 'https://platform.openai.com/account/api-keys',
+    needsKey: true,
+    imageSize: '1024x768',
+  },
+  'replicate': {
+    name: 'Replicate',
+    label: 'Replicate',
+    keyLabel: 'Replicate API Key',
+    keyPlaceholder: 'r8_...',
+    apiLink: 'https://replicate.com/account/api-tokens',
+    needsKey: true,
+    model: 'stability-ai/sdxl',
+  },
+};
+
 // =========================================
 // State
 // =========================================
@@ -107,9 +144,13 @@ const state = {
   provider: localStorage.getItem('li_provider') || 'claude-manual',
   model: null,
   apiKeys: JSON.parse(localStorage.getItem('li_api_keys') || '{}'),
+  imageProvider: localStorage.getItem('li_image_provider') || 'none',
+  imageKeys: JSON.parse(localStorage.getItem('li_image_keys') || '{}'),
   tone: 'professional',
   lastPrompt: '',
+  lastPost: '',
   generating: false,
+  generatingImage: false,
 };
 
 // =========================================
@@ -121,6 +162,14 @@ function saveKeys() {
 
 function saveProvider() {
   localStorage.setItem('li_provider', state.provider);
+}
+
+function saveImageKeys() {
+  localStorage.setItem('li_image_keys', JSON.stringify(state.imageKeys));
+}
+
+function saveImageProvider() {
+  localStorage.setItem('li_image_provider', state.imageProvider);
 }
 
 function showToast(msg, type = '') {
@@ -312,15 +361,177 @@ async function generatePost(prompt) {
 }
 
 // =========================================
+// Image Generation
+// =========================================
+function buildImagePrompt(postText) {
+  const lines = postText.split('\n').filter(l => l.trim());
+  const firstLine = lines[0] || '';
+
+  const themes = {
+    'marketing': 'professional marketing presentation, charts, growth metrics, modern design',
+    'business': 'corporate, professional teamwork, office, success, leadership',
+    'technology': 'tech innovation, futuristic, digital transformation, modern tech',
+    'leadership': 'confident leader, mentorship, professional development, growth',
+    'motivation': 'inspiring, uplifting, achievement, success, breakthrough',
+    'learning': 'education, learning, knowledge, growth, development',
+    'career': 'career growth, professional development, success, opportunity',
+    'social': 'community, connection, teamwork, collaboration, networking',
+    'personal': 'personal achievement, milestone, celebration, success',
+  };
+
+  let theme = 'professional business';
+  for (const [key, desc] of Object.entries(themes)) {
+    if (firstLine.toLowerCase().includes(key)) {
+      theme = desc;
+      break;
+    }
+  }
+
+  return `A professional LinkedIn-style image for this post: "${firstLine}". Style: modern, clean, corporate, ${theme}. High quality, suitable for professional networking. No text overlay.`;
+}
+
+async function generateWithStabilityAI(prompt, apiKey) {
+  const engineId = 'stable-diffusion-xl-1024-v1-0';
+  const url = `https://api.stability.ai/v1/generate/${engineId}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      text_prompts: [{ text: prompt, weight: 1 }],
+      cfg_scale: 7,
+      height: 576,
+      width: 1024,
+      samples: 1,
+      steps: 30,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || `Stability AI error (${res.status})`);
+  if (data.artifacts?.[0]?.base64) {
+    return `data:image/png;base64,${data.artifacts[0].base64}`;
+  }
+  throw new Error('No image generated');
+}
+
+async function generateWithDALLE(prompt, apiKey) {
+  const res = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'dall-e-3',
+      prompt,
+      n: 1,
+      size: '1024x768',
+      quality: 'standard',
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `DALL-E error (${res.status})`);
+  if (data.data?.[0]?.url) {
+    return data.data[0].url;
+  }
+  throw new Error('No image generated');
+}
+
+async function generateWithReplicate(prompt, apiKey) {
+  const res = await fetch('https://api.replicate.com/v1/predictions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      version: 'a1c99cb771e0730651f53b2b8092582890123d2249a6ba63b142512ea9a3649c',
+      input: {
+        prompt,
+        num_inference_steps: 30,
+        guidance_scale: 7.5,
+        width: 1024,
+        height: 576,
+      },
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail?.[0]?.msg || `Replicate error (${res.status})`);
+
+  const predictionId = data.id;
+
+  for (let i = 0; i < 60; i++) {
+    const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+    const checkData = await checkRes.json();
+
+    if (checkData.status === 'succeeded') {
+      if (checkData.output?.[0]) return checkData.output[0];
+      throw new Error('No image in response');
+    }
+    if (checkData.status === 'failed') throw new Error('Image generation failed');
+
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error('Image generation timed out');
+}
+
+async function generateImage(postText) {
+  if (state.imageProvider === 'none') {
+    throw new Error('Image generation is disabled. Enable it in AI Settings.');
+  }
+
+  const cfg = IMAGE_PROVIDERS[state.imageProvider];
+  const apiKey = state.imageKeys[state.imageProvider] || '';
+
+  if (cfg.needsKey && !apiKey) {
+    throw new Error(`No API key for ${cfg.name}. Go to AI Settings to add it.`);
+  }
+
+  const prompt = buildImagePrompt(postText);
+
+  switch (state.imageProvider) {
+    case 'stability': return generateWithStabilityAI(prompt, apiKey);
+    case 'openai-images': return generateWithDALLE(prompt, apiKey);
+    case 'replicate': return generateWithReplicate(prompt, apiKey);
+    default: throw new Error('Unknown image provider.');
+  }
+}
+
+// =========================================
 // UI: Output rendering
 // =========================================
 function renderOutput(text) {
   const clean = text.trim();
+  state.lastPost = clean;
   document.getElementById('editablePost').value = clean;
   updatePreview(clean);
   setHidden(document.getElementById('outputCard'), false);
   setHidden(document.getElementById('manualCard'), true);
+
+  // Show image section if a provider is selected
+  const showImageSection = state.imageProvider !== 'none';
+  setHidden(document.getElementById('imageSection'), !showImageSection);
+  if (showImageSection) {
+    resetImageUI();
+  }
+
   document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetImageUI() {
+  setHidden(document.getElementById('imagePlaceholder'), false);
+  setHidden(document.getElementById('generatedImage'), true);
+  setHidden(document.getElementById('imageLoading'), true);
+  setHidden(document.getElementById('imageActions'), true);
 }
 
 function updatePreview(text) {
@@ -363,6 +574,40 @@ function closeSettings() {
   setHidden(document.getElementById('settingsPanel'), true);
   setHidden(document.getElementById('settingsOverlay'), true);
   document.body.style.overflow = '';
+}
+
+function refreshImageSettingsUI() {
+  const imgProvider = state.imageProvider;
+  const imgCfg = IMAGE_PROVIDERS[imgProvider];
+
+  // Highlight active image provider card
+  document.querySelectorAll('[data-image-provider]').forEach(c => {
+    c.classList.toggle('active', c.dataset.imageProvider === imgProvider);
+  });
+
+  // API key section
+  const imgKeySect = document.getElementById('imageKeySection');
+  if (imgCfg.needsKey && imgProvider !== 'none') {
+    setHidden(imgKeySect, false);
+    document.getElementById('imageKeyLabel').textContent = imgCfg.keyLabel;
+    const keyInput = document.getElementById('imageKeyInput');
+    keyInput.placeholder = imgCfg.keyPlaceholder;
+    keyInput.value = state.imageKeys[imgProvider] || '';
+
+    const link = document.getElementById('imageApiLink');
+    link.href = imgCfg.apiLink;
+
+    const ks = document.getElementById('imageKeyStatus');
+    if (state.imageKeys[imgProvider]) {
+      ks.className = 'key-status ok';
+      ks.textContent = '✓ Key saved';
+    } else {
+      ks.className = 'key-status';
+      ks.textContent = '';
+    }
+  } else {
+    setHidden(imgKeySect, true);
+  }
 }
 
 function refreshSettingsUI() {
@@ -430,11 +675,19 @@ function applySettings() {
     state.model = sel.value || cfg.defaultModel;
   }
 
+  // Save image provider settings
+  const imgKey = document.getElementById('imageKeyInput').value.trim();
+  if (imgKey && state.imageProvider !== 'none') {
+    state.imageKeys[state.imageProvider] = imgKey;
+    saveImageKeys();
+  }
+  saveImageProvider();
+
   saveProvider();
   updateProviderBadge();
   updateGenerateButtonLabel();
   closeSettings();
-  showToast(`Provider set to ${cfg.name}`, 'success');
+  showToast(`Settings saved`, 'success');
 }
 
 function updateProviderBadge() {
@@ -468,6 +721,55 @@ function collectFormData() {
     hook: document.getElementById('hookToggle').checked,
     custom: document.getElementById('customInstructions').value.trim(),
   };
+}
+
+// =========================================
+// Image Generation UI Handlers
+// =========================================
+async function handleGenerateImage() {
+  if (!state.lastPost) {
+    showToast('Generate a post first', 'error');
+    return;
+  }
+
+  setHidden(document.getElementById('imagePlaceholder'), true);
+  setHidden(document.getElementById('imageLoading'), false);
+  document.getElementById('generateImageBtn').disabled = true;
+
+  try {
+    const imageUrl = await generateImage(state.lastPost);
+
+    const img = document.getElementById('generatedImage');
+    img.src = imageUrl;
+    img.onload = () => {
+      setHidden(document.getElementById('imageLoading'), true);
+      setHidden(document.getElementById('generatedImage'), false);
+      setHidden(document.getElementById('imageActions'), false);
+      showToast('Image generated!', 'success');
+    };
+    img.onerror = () => {
+      showError('Failed to load image. Try again.');
+      setHidden(document.getElementById('imageLoading'), true);
+      setHidden(document.getElementById('imagePlaceholder'), false);
+    };
+  } catch (err) {
+    showError(err.message || 'Image generation failed');
+    setHidden(document.getElementById('imageLoading'), true);
+    setHidden(document.getElementById('imagePlaceholder'), false);
+  } finally {
+    document.getElementById('generateImageBtn').disabled = false;
+  }
+}
+
+function handleDownloadImage() {
+  const img = document.getElementById('generatedImage');
+  if (!img.src) return;
+
+  const link = document.createElement('a');
+  link.href = img.src;
+  link.download = `linkedin-post-${Date.now()}.png`;
+  link.click();
+  showToast('Downloaded!', 'success');
 }
 
 // =========================================
@@ -618,6 +920,46 @@ function init() {
   // Copy
   document.getElementById('copyBtn').addEventListener('click', handleCopy);
 
+  // Image generation
+  document.getElementById('generateImageBtn').addEventListener('click', handleGenerateImage);
+  document.getElementById('regenerateImageBtn').addEventListener('click', handleGenerateImage);
+  document.getElementById('downloadImageBtn').addEventListener('click', handleDownloadImage);
+
+  // Image provider cards
+  document.querySelectorAll('[data-image-provider]').forEach(card => {
+    card.addEventListener('click', () => {
+      state.imageProvider = card.dataset.imageProvider;
+      refreshImageSettingsUI();
+    });
+  });
+
+  // Image key handlers
+  document.getElementById('saveImageKeyBtn').addEventListener('click', () => {
+    const key = document.getElementById('imageKeyInput').value.trim();
+    if (!key) { showToast('Please enter an API key.', 'error'); return; }
+    state.imageKeys[state.imageProvider] = key;
+    saveImageKeys();
+    const ks = document.getElementById('imageKeyStatus');
+    ks.className = 'key-status ok';
+    ks.textContent = '✓ Key saved';
+    showToast('Image API key saved.', 'success');
+  });
+
+  document.getElementById('clearImageKeyBtn').addEventListener('click', () => {
+    delete state.imageKeys[state.imageProvider];
+    saveImageKeys();
+    document.getElementById('imageKeyInput').value = '';
+    const ks = document.getElementById('imageKeyStatus');
+    ks.className = 'key-status';
+    ks.textContent = 'Key cleared.';
+    showToast('Image API key removed.', '');
+  });
+
+  document.getElementById('toggleImageKeyVisibility').addEventListener('click', () => {
+    const inp = document.getElementById('imageKeyInput');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+
   // Manual mode
   document.getElementById('copyPromptBtn').addEventListener('click', handleCopyPrompt);
   document.getElementById('processResponseBtn').addEventListener('click', handleProcessResponse);
@@ -630,6 +972,7 @@ function init() {
   // Initial UI
   updateProviderBadge();
   updateGenerateButtonLabel();
+  refreshImageSettingsUI();
 
   // Restore model if saved
   const cfg = PROVIDERS[state.provider];

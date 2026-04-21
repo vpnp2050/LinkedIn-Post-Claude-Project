@@ -109,6 +109,50 @@
         </div>
       </div>
 
+      <!-- Image Generation Settings -->
+      <div class="divider"></div>
+      <h3 class="settings-section-title">Image Generation (Optional)</h3>
+      <p class="settings-hint">Generate images to pair with your posts</p>
+
+      <div class="provider-grid" id="imageProviderGrid">
+        <div class="provider-card" data-image-provider="none">
+          <div class="provider-card-icon">⏭️</div>
+          <div class="provider-card-name">Disabled</div>
+          <div class="provider-card-sub">No images</div>
+        </div>
+        <div class="provider-card" data-image-provider="stability">
+          <div class="provider-card-icon">🎨</div>
+          <div class="provider-card-name">Stability AI</div>
+          <div class="provider-card-sub">Stable Diffusion</div>
+        </div>
+        <div class="provider-card" data-image-provider="openai-images">
+          <div class="provider-card-icon">🖼️</div>
+          <div class="provider-card-name">DALL-E</div>
+          <div class="provider-card-sub">OpenAI</div>
+        </div>
+        <div class="provider-card" data-image-provider="replicate">
+          <div class="provider-card-icon">🚀</div>
+          <div class="provider-card-name">Replicate</div>
+          <div class="provider-card-sub">Free tier</div>
+        </div>
+      </div>
+
+      <div class="image-key-section hidden" id="imageKeySection">
+        <label class="form-label" id="imageKeyLabel">API Key</label>
+        <div class="api-key-row">
+          <input type="password" class="form-input" id="imageKeyInput" placeholder="Enter API key..." autocomplete="off">
+          <button class="btn-icon" id="toggleImageKeyVisibility" title="Show/Hide">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="api-key-actions">
+          <button class="btn-primary btn-sm" id="saveImageKeyBtn">Save Key</button>
+          <button class="btn-danger btn-sm" id="clearImageKeyBtn">Clear</button>
+          <a class="api-link" id="imageApiLink" href="#" target="_blank" rel="noopener">Get API Key</a>
+        </div>
+        <div class="key-status" id="imageKeyStatus"></div>
+      </div>
+
       <button class="btn-primary settings-save" id="applySettings">Apply &amp; Close</button>
     </div>
   </aside>
@@ -241,6 +285,35 @@
           <div class="lp-reactions">
             <span>👍 ❤️ 💡</span>
             <span class="lp-stats">42 reactions &bull; 8 comments</span>
+          </div>
+        </div>
+
+        <!-- Image Generation Section -->
+        <div class="image-section hidden" id="imageSection" style="margin-top:1.5rem">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
+            <h3 class="card-title" style="margin:0; font-size:0.95rem">Pair with an Image</h3>
+            <button class="btn-primary btn-sm" id="generateImageBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              Generate Image
+            </button>
+          </div>
+          <div class="image-preview-container">
+            <div class="image-placeholder hidden" id="imagePlaceholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <p>Click "Generate Image" to create a visual for your post</p>
+            </div>
+            <img id="generatedImage" class="generated-image hidden" alt="Generated image for post">
+            <div class="image-loading hidden" id="imageLoading">
+              <div class="spinner"></div>
+              <p>Generating image...</p>
+            </div>
+          </div>
+          <div class="image-actions hidden" id="imageActions">
+            <button class="btn-secondary btn-sm" id="regenerateImageBtn">Regenerate</button>
+            <button class="btn-primary btn-sm" id="downloadImageBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download
+            </button>
           </div>
         </div>
 
