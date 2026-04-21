@@ -391,16 +391,34 @@ async function generateWithPollinations(prompt) {
   const seed = Math.floor(Math.random() * 1000000);
   const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=576&nologo=true&seed=${seed}&model=flux`;
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Pollinations error (${res.status})`);
+  const maxRetries = 4;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const wait = attempt * 3000;
+      document.getElementById('imageLoading').querySelector('p').textContent =
+        `Rate limited — retrying in ${wait / 1000}s... (attempt ${attempt + 1}/${maxRetries})`;
+      await new Promise(r => setTimeout(r, wait));
+    }
 
-  const blob = await res.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Failed to read image data'));
-    reader.readAsDataURL(blob);
-  });
+    const res = await fetch(url);
+
+    if (res.status === 429) {
+      if (attempt === maxRetries - 1) {
+        throw new Error('Pollinations rate limit reached. Wait 30 seconds and try again, or switch to DALL-E / Hugging Face.');
+      }
+      continue;
+    }
+
+    if (!res.ok) throw new Error(`Pollinations error (${res.status})`);
+
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read image data'));
+      reader.readAsDataURL(blob);
+    });
+  }
 }
 
 async function generateWithHuggingFace(prompt, apiKey) {
