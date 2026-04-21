@@ -161,6 +161,9 @@ const state = {
   tone: 'professional',
   lastPrompt: '',
   lastPost: '',
+  posts: [],
+  activePostIndex: 0,
+  postCount: 1,
   generating: false,
   generatingImage: false,
 };
@@ -596,17 +599,18 @@ async function generateImage(postText) {
 // UI: Output rendering
 // =========================================
 function renderOutput(text) {
+  // Legacy single-post render used by manual paste flow
   const clean = text.trim();
+  state.posts = [clean];
+  state.activePostIndex = 0;
   state.lastPost = clean;
   document.getElementById('editablePost').value = clean;
   updatePreview(clean);
+  setHidden(document.getElementById('postTabs'), true);
   setHidden(document.getElementById('outputCard'), false);
   setHidden(document.getElementById('manualCard'), true);
-
-  // Always show the image section once a post is generated
   setHidden(document.getElementById('imageSection'), false);
   resetImageUI();
-
   document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -806,7 +810,13 @@ function updateProviderBadge() {
 function updateGenerateButtonLabel() {
   const txt = document.getElementById('generateBtnText');
   if (!state.generating) {
-    txt.textContent = currentProviderIsManual() ? 'Build Prompt' : 'Generate LinkedIn Post';
+    if (currentProviderIsManual()) {
+      txt.textContent = 'Build Prompt';
+    } else {
+      txt.textContent = state.postCount > 1
+        ? `Generate ${state.postCount} LinkedIn Posts`
+        : 'Generate LinkedIn Post';
+    }
   }
 }
 
@@ -911,28 +921,149 @@ async function handleGenerate() {
     return;
   }
 
-  const prompt = buildPrompt(data);
-  state.lastPrompt = prompt;
+  const basePrompt = buildPrompt(data);
+  state.lastPrompt = basePrompt;
 
   if (currentProviderIsManual()) {
-    // Manual mode: show prompt for copy-paste to claude.ai
-    document.getElementById('manualPromptBox').textContent = prompt;
+    document.getElementById('manualPromptBox').textContent = basePrompt;
     setHidden(document.getElementById('manualCard'), false);
     setHidden(document.getElementById('outputCard'), true);
     document.getElementById('manualCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
 
+  // Reset posts state
+  state.posts = new Array(state.postCount).fill(null);
+  state.activePostIndex = 0;
+
+  // Pre-render output card with empty tabs
+  renderOutputShell();
   setGenerating(true);
-  try {
-    const result = await generatePost(prompt);
-    renderOutput(result);
-    showToast('Post generated!', 'success');
-  } catch (err) {
-    showError(err.message || 'Something went wrong. Please try again.');
-  } finally {
-    setGenerating(false);
+
+  for (let i = 0; i < state.postCount; i++) {
+    setTabLoading(i);
+    updateGenerateProgress(i + 1, state.postCount);
+    const variantPrompt = state.postCount > 1
+      ? basePrompt + `\n\nIMPORTANT: This is variation ${i + 1} of ${state.postCount}. Make it distinctly different in opening hook and structure from other variations.`
+      : basePrompt;
+    try {
+      const result = await generatePost(variantPrompt);
+      state.posts[i] = result.trim();
+      setTabDone(i);
+      if (i === 0) showPostAtIndex(0);
+    } catch (err) {
+      state.posts[i] = `[Error generating post ${i + 1}: ${err.message}]`;
+      setTabDone(i, true);
+      if (i === 0) showPostAtIndex(0);
+    }
   }
+
+  setGenerating(false);
+  showToast(state.postCount > 1 ? `${state.postCount} posts generated!` : 'Post generated!', 'success');
+}
+
+function renderOutputShell() {
+  const count = state.postCount;
+  const tabsEl = document.getElementById('postTabs');
+
+  setHidden(document.getElementById('outputCard'), false);
+  setHidden(document.getElementById('manualCard'), true);
+
+  // Build tabs
+  if (count > 1) {
+    tabsEl.innerHTML = Array.from({ length: count }, (_, i) =>
+      `<button class="post-tab-btn${i === 0 ? ' active' : ''}" data-tab="${i}">
+        Post ${i + 1} <span class="tab-status"></span>
+      </button>`
+    ).join('');
+    setHidden(tabsEl, false);
+    tabsEl.querySelectorAll('.post-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => showPostAtIndex(Number(btn.dataset.tab)));
+    });
+  } else {
+    setHidden(tabsEl, true);
+  }
+
+  // Reset image section
+  resetImageUI();
+  setHidden(document.getElementById('imageSection'), false);
+
+  document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showPostAtIndex(index) {
+  state.activePostIndex = index;
+  const text = state.posts[index] || '';
+  state.lastPost = text;
+  document.getElementById('editablePost').value = text;
+  updatePreview(text);
+
+  // Update title
+  document.getElementById('outputTitle').textContent =
+    state.postCount > 1 ? `Post ${index + 1} of ${state.postCount}` : 'Your LinkedIn Post';
+
+  // Update tab active state
+  document.querySelectorAll('.post-tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+}
+
+function setTabLoading(index) {
+  const btn = document.querySelector(`.post-tab-btn[data-tab="${index}"]`);
+  if (btn) { btn.classList.remove('done'); btn.classList.add('loading'); }
+}
+
+function setTabDone(index, isError = false) {
+  const btn = document.querySelector(`.post-tab-btn[data-tab="${index}"]`);
+  if (btn) {
+    btn.classList.remove('loading');
+    btn.classList.add('done');
+    if (isError) btn.style.color = 'var(--danger)';
+  }
+}
+
+function updateGenerateProgress(current, total) {
+  const txt = document.getElementById('generateBtnText');
+  if (!state.generating) return;
+  txt.textContent = total > 1 ? `Generating post ${current} of ${total}…` : 'Generating…';
+}
+
+// =========================================
+// Google Docs Export
+// =========================================
+function handleExportToGoogleDocs() {
+  const posts = state.posts.filter(Boolean);
+  if (!posts.length) { showToast('No posts to export', 'error'); return; }
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const topic = document.getElementById('topicInput').value.trim() || 'LinkedIn Posts';
+
+  let content = `LinkedIn Posts — ${topic}\nGenerated on ${dateStr}\n`;
+  content += '='.repeat(50) + '\n\n';
+
+  posts.forEach((post, i) => {
+    if (posts.length > 1) content += `POST ${i + 1}\n${'—'.repeat(30)}\n`;
+    content += post + '\n\n';
+    if (posts.length > 1) content += '\n';
+  });
+
+  // Copy to clipboard
+  navigator.clipboard.writeText(content).then(() => {
+    // Open a new Google Doc
+    window.open('https://docs.new', '_blank');
+    showToast('Copied! Paste into the new Google Doc (Ctrl+V)', 'success');
+  }).catch(() => {
+    // Fallback: download as .txt
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `linkedin-posts-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Downloaded as .txt — upload to Google Drive and open with Google Docs', '');
+  });
 }
 
 function handleCopy() {
@@ -1059,6 +1190,19 @@ function init() {
     setHidden(document.getElementById('clearUrlBtn'), true);
   });
 
+  // Post count selector
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.postCount = Number(btn.dataset.count);
+      updateGenerateButtonLabel();
+    });
+  });
+
+  // Google Docs export
+  document.getElementById('exportDocsBtn').addEventListener('click', handleExportToGoogleDocs);
+
   // Generate
   document.getElementById('generateBtn').addEventListener('click', handleGenerate);
 
@@ -1117,7 +1261,10 @@ function init() {
 
   // Live preview sync from editable textarea
   document.getElementById('editablePost').addEventListener('input', e => {
-    updatePreview(e.target.value);
+    const val = e.target.value;
+    state.posts[state.activePostIndex] = val;
+    state.lastPost = val;
+    updatePreview(val);
   });
 
   // Initial UI
