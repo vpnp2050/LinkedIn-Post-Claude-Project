@@ -124,7 +124,7 @@ const IMAGE_PROVIDERS = {
     keyPlaceholder: 'sk-...',
     apiLink: 'https://platform.openai.com/account/api-keys',
     needsKey: true,
-    imageSize: '1024x768',
+    imageSize: '1024x1024',
   },
   'replicate': {
     name: 'Replicate',
@@ -430,7 +430,7 @@ async function generateWithDALLE(prompt, apiKey) {
       model: 'dall-e-3',
       prompt,
       n: 1,
-      size: '1024x768',
+      size: '1024x1024',
       quality: 'standard',
     }),
   });
