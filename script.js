@@ -107,14 +107,6 @@ const IMAGE_PROVIDERS = {
     needsKey: false,
     apiLink: '#',
   },
-  'gemini-images': {
-    name: 'Google Gemini',
-    label: 'Google Gemini (Imagen-3)',
-    keyLabel: 'Google AI Studio API Key',
-    keyPlaceholder: 'AIza...',
-    apiLink: 'https://aistudio.google.com/app/apikey',
-    needsKey: true,
-  },
   'stability': {
     name: 'Stability AI',
     label: 'Stable Diffusion',
@@ -398,33 +390,6 @@ function buildImagePrompt(postText) {
   return `A professional LinkedIn-style image for this post: "${firstLine}". Style: modern, clean, corporate, ${theme}. High quality, suitable for professional networking. No text overlay.`;
 }
 
-async function generateWithGeminiImages(prompt, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3-generate-images:generateImages?key=${apiKey}`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }],
-        },
-      ],
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || `Gemini Images error (${res.status})`);
-
-  if (data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType === 'image/png') {
-    const base64 = data.candidates[0].content.parts[0].inlineData.data;
-    return `data:image/png;base64,${base64}`;
-  }
-
-  throw new Error('No image generated. Check your API key or quota.');
-}
-
 async function generateWithStabilityAI(prompt, apiKey) {
   const engineId = 'stable-diffusion-xl-1024-v1-0';
   const url = `https://api.stability.ai/v1/generate/${engineId}`;
@@ -534,7 +499,6 @@ async function generateImage(postText) {
   const prompt = buildImagePrompt(postText);
 
   switch (state.imageProvider) {
-    case 'gemini-images': return generateWithGeminiImages(prompt, apiKey);
     case 'stability': return generateWithStabilityAI(prompt, apiKey);
     case 'openai-images': return generateWithDALLE(prompt, apiKey);
     case 'replicate': return generateWithReplicate(prompt, apiKey);
