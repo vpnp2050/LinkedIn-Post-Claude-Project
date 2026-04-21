@@ -401,18 +401,29 @@ async function generateWithStabilityAI(prompt, apiKey) {
   formData.append('samples', '1');
   formData.append('steps', '30');
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}` },
-    body: formData,
-  });
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+      body: formData,
+    });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || `Stability API error: ${res.status}`);
-  if (data.artifacts?.[0]?.base64) {
-    return `data:image/png;base64,${data.artifacts[0].base64}`;
+    if (res.status === 404) {
+      throw new Error('Engine not found. Your API key may not have access. Try Replicate (free) instead.');
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('Invalid API key. Check platform.stability.ai/account/keys');
+    }
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `Error: ${res.status}`);
+    if (data.artifacts?.[0]?.base64) {
+      return `data:image/png;base64,${data.artifacts[0].base64}`;
+    }
+    throw new Error('No image returned');
+  } catch (e) {
+    throw new Error(`Stability AI: ${e.message}`);
   }
-  throw new Error('No image data returned from Stability AI');
 }
 
 async function generateWithDALLE(prompt, apiKey) {
@@ -590,25 +601,34 @@ function refreshImageSettingsUI() {
   const imgProvider = state.imageProvider;
   const imgCfg = IMAGE_PROVIDERS[imgProvider];
 
+  // If provider doesn't exist, reset to 'none'
+  if (!imgCfg) {
+    state.imageProvider = 'none';
+    saveImageProvider();
+  }
+
+  const safeProvider = state.imageProvider;
+  const safeCfg = IMAGE_PROVIDERS[safeProvider] || IMAGE_PROVIDERS['none'];
+
   // Highlight active image provider card
   document.querySelectorAll('[data-image-provider]').forEach(c => {
-    c.classList.toggle('active', c.dataset.imageProvider === imgProvider);
+    c.classList.toggle('active', c.dataset.imageProvider === safeProvider);
   });
 
   // API key section
   const imgKeySect = document.getElementById('imageKeySection');
-  if (imgCfg.needsKey && imgProvider !== 'none') {
+  if (safeCfg.needsKey && safeProvider !== 'none') {
     setHidden(imgKeySect, false);
-    document.getElementById('imageKeyLabel').textContent = imgCfg.keyLabel;
+    document.getElementById('imageKeyLabel').textContent = safeCfg.keyLabel;
     const keyInput = document.getElementById('imageKeyInput');
-    keyInput.placeholder = imgCfg.keyPlaceholder;
-    keyInput.value = state.imageKeys[imgProvider] || '';
+    keyInput.placeholder = safeCfg.keyPlaceholder;
+    keyInput.value = state.imageKeys[safeProvider] || '';
 
     const link = document.getElementById('imageApiLink');
-    link.href = imgCfg.apiLink;
+    link.href = safeCfg.apiLink;
 
     const ks = document.getElementById('imageKeyStatus');
-    if (state.imageKeys[imgProvider]) {
+    if (state.imageKeys[safeProvider]) {
       ks.className = 'key-status ok';
       ks.textContent = '✓ Key saved';
     } else {
