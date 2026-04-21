@@ -37,9 +37,10 @@ const PROVIDERS = {
     keyPlaceholder: 'AIza...',
     apiLink: 'https://aistudio.google.com/app/apikey',
     models: [
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Free, Fast)' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Advanced)' },
-      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Free, Fast)' },
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Free, Recommended)' },
+      { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite (Free, Fastest)' },
+      { id: 'gemini-1.5-flash-latest', name: 'Gemini 1.5 Flash (Free, Fast)' },
+      { id: 'gemini-1.5-pro-latest', name: 'Gemini 1.5 Pro (Advanced)' },
     ],
     defaultModel: 'gemini-2.0-flash',
     needsKey: true,
@@ -187,7 +188,7 @@ TONE: ${tone.charAt(0).toUpperCase() + tone.slice(1)}
 RULES TO FOLLOW:
 ${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-Output ONLY the final LinkedIn post text. Do not include any explanation, label, or commentary — just the post itself.`;
+IMPORTANT: Output ONLY the final LinkedIn post text. No preamble, no explanation, no "Here is your post:" label — start directly with the post hook.`;
 }
 
 // =========================================
@@ -219,16 +220,18 @@ async function callGeminiAPI(prompt, apiKey, model) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      systemInstruction: {
+        parts: [{ text: 'You are an expert LinkedIn content creator. Output ONLY the final LinkedIn post text — no introduction, no explanation, no "Here is your post:", no labels. Just the raw post text itself.' }],
+      },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { maxOutputTokens: 1024, temperature: 0.9 },
     }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `Gemini API error (${res.status})`);
-  if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-    return data.candidates[0].content.parts[0].text;
-  }
-  throw new Error('Gemini returned no content. Check your API key or model.');
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Gemini returned no content. Check your API key or try a different model.');
+  return text;
 }
 
 async function callOpenAIAPI(prompt, apiKey, model) {
