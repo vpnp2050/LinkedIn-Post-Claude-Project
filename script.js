@@ -1029,6 +1029,77 @@ function updateGenerateProgress(current, total) {
 }
 
 // =========================================
+// .docx Export
+// =========================================
+async function handleExportDocx() {
+  const posts = state.posts.filter(Boolean);
+  if (!posts.length) { showToast('No posts to export', 'error'); return; }
+
+  if (typeof docx === 'undefined') {
+    showToast('docx library not loaded. Check your connection.', 'error');
+    return;
+  }
+
+  const { Document, Paragraph, TextRun, HeadingLevel, PageBreak, AlignmentType, Packer } = docx;
+
+  const topic = document.getElementById('topicInput').value.trim() || 'LinkedIn Posts';
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const children = [
+    new Paragraph({
+      text: `LinkedIn Posts — ${topic}`,
+      heading: HeadingLevel.HEADING_1,
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `Generated on ${dateStr}`, color: '666666', size: 20 })],
+      spacing: { after: 300 },
+    }),
+  ];
+
+  posts.forEach((post, i) => {
+    if (posts.length > 1) {
+      children.push(
+        new Paragraph({
+          text: `Post ${i + 1}`,
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 200, after: 160 },
+        })
+      );
+    }
+
+    const lines = post.split('\n');
+    lines.forEach(line => {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: line || ' ', size: 24 })],
+          spacing: { after: line.trim() ? 160 : 80 },
+        })
+      );
+    });
+
+    if (i < posts.length - 1) {
+      children.push(new Paragraph({ children: [new PageBreak()] }));
+    }
+  });
+
+  try {
+    const doc = new Document({ sections: [{ properties: {}, children }] });
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `linkedin-posts-${Date.now()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Downloaded as .docx!', 'success');
+  } catch (e) {
+    showToast(`Export failed: ${e.message}`, 'error');
+  }
+}
+
+// =========================================
 // Google Docs Export
 // =========================================
 function handleExportToGoogleDocs() {
@@ -1202,6 +1273,7 @@ function init() {
 
   // Google Docs export
   document.getElementById('exportDocsBtn').addEventListener('click', handleExportToGoogleDocs);
+  document.getElementById('exportDocxBtn').addEventListener('click', handleExportDocx);
 
   // Generate
   document.getElementById('generateBtn').addEventListener('click', handleGenerate);

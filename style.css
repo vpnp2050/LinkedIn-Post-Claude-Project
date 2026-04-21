@@ -646,6 +646,23 @@ body {
 }
 .btn-gdocs:hover { background: #e8f0fe; }
 
+.btn-docx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.9rem;
+  background: #fff;
+  color: #2b7a3a;
+  border: 1.5px solid #2b7a3a;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.btn-docx:hover { background: #e6f4ea; }
+
 /* =========================================
    Generate Button
    ========================================= */
@@ -1038,6 +1055,8 @@ a { color: var(--li-blue); }
   .generate-row .btn-generate { width: 100%; }
   .btn-gdocs span { display: none; }
   .btn-gdocs { padding: 0.42rem; }
+  .btn-docx span { display: none; }
+  .btn-docx { padding: 0.42rem; }
 }
 
 @media (max-width: 380px) {
