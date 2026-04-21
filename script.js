@@ -115,6 +115,22 @@ const IMAGE_PROVIDERS = {
     apiLink: 'https://pollinations.ai',
     needsKey: false,
   },
+  'deepai': {
+    name: 'DeepAI',
+    label: 'DeepAI',
+    keyLabel: 'DeepAI API Key',
+    keyPlaceholder: 'Enter DeepAI key...',
+    apiLink: 'https://deepai.org/dashboard#api-key',
+    needsKey: true,
+  },
+  'freepik': {
+    name: 'Freepik',
+    label: 'Freepik AI',
+    keyLabel: 'Freepik API Key',
+    keyPlaceholder: 'FPSX...',
+    apiLink: 'https://www.freepik.com/api/subscriptions',
+    needsKey: true,
+  },
   'openai-images': {
     name: 'DALL-E 3',
     label: 'DALL-E (OpenAI)',
@@ -421,6 +437,47 @@ async function generateWithPollinations(prompt) {
   }
 }
 
+async function generateWithDeepAI(prompt, apiKey) {
+  const formData = new FormData();
+  formData.append('text', prompt);
+
+  const res = await fetch('https://api.deepai.org/api/text2img', {
+    method: 'POST',
+    headers: { 'api-key': apiKey },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.err || data.status || `DeepAI error (${res.status})`);
+  if (data.output_url) return data.output_url;
+  throw new Error('No image returned from DeepAI');
+}
+
+async function generateWithFreepik(prompt, apiKey) {
+  const res = await fetch('https://api.freepik.com/v1/ai/text-to-image', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-freepik-api-key': apiKey,
+      'Accept-Language': 'en-US',
+    },
+    body: JSON.stringify({
+      prompt: { positive: prompt },
+      image: { size: 'landscape_16_9' },
+      styling: { style: 'photo' },
+      num_images: 1,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || data.error || `Freepik error (${res.status})`);
+
+  if (data.data?.[0]?.base64) {
+    return `data:image/jpeg;base64,${data.data[0].base64}`;
+  }
+  throw new Error('No image returned from Freepik. Check your API plan includes image generation.');
+}
+
 async function generateWithHuggingFace(prompt, apiKey) {
   const model = 'stabilityai/stable-diffusion-xl-base-1.0';
   const url = `https://api-inference.huggingface.co/models/${model}`;
@@ -493,9 +550,11 @@ async function generateImage(postText) {
   const prompt = buildImagePrompt(postText);
 
   switch (state.imageProvider) {
-    case 'pollinations':   return generateWithPollinations(prompt);
-    case 'openai-images':  return generateWithDALLE(prompt, apiKey);
-    case 'huggingface':    return generateWithHuggingFace(prompt, apiKey);
+    case 'pollinations':  return generateWithPollinations(prompt);
+    case 'deepai':        return generateWithDeepAI(prompt, apiKey);
+    case 'freepik':       return generateWithFreepik(prompt, apiKey);
+    case 'openai-images': return generateWithDALLE(prompt, apiKey);
+    case 'huggingface':   return generateWithHuggingFace(prompt, apiKey);
     default: throw new Error('Unknown image provider.');
   }
 }
