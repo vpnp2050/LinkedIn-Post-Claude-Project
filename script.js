@@ -107,33 +107,29 @@ const IMAGE_PROVIDERS = {
     needsKey: false,
     apiLink: '#',
   },
-  'stability': {
-    name: 'Stability AI',
-    label: 'Stable Diffusion',
-    keyLabel: 'Stability AI API Key',
-    keyPlaceholder: 'sk-...',
-    apiLink: 'https://platform.stability.ai/account/keys',
-    needsKey: true,
-    imageSize: '1024x576',
-    samplingSteps: 30,
+  'pollinations': {
+    name: 'Pollinations.ai',
+    label: 'Pollinations (Free)',
+    keyLabel: null,
+    keyPlaceholder: null,
+    apiLink: 'https://pollinations.ai',
+    needsKey: false,
   },
   'openai-images': {
-    name: 'DALL-E (OpenAI)',
-    label: 'DALL-E',
+    name: 'DALL-E 3',
+    label: 'DALL-E (OpenAI)',
     keyLabel: 'OpenAI API Key',
     keyPlaceholder: 'sk-...',
     apiLink: 'https://platform.openai.com/account/api-keys',
     needsKey: true,
-    imageSize: '1024x1024',
   },
-  'replicate': {
-    name: 'Replicate',
-    label: 'Replicate',
-    keyLabel: 'Replicate API Key',
-    keyPlaceholder: 'r8_...',
-    apiLink: 'https://replicate.com/account/api-tokens',
+  'huggingface': {
+    name: 'Hugging Face',
+    label: 'Hugging Face (Free)',
+    keyLabel: 'Hugging Face Token',
+    keyPlaceholder: 'hf_...',
+    apiLink: 'https://huggingface.co/settings/tokens',
     needsKey: true,
-    model: 'stability-ai/sdxl',
   },
 };
 
@@ -390,40 +386,53 @@ function buildImagePrompt(postText) {
   return `A professional LinkedIn-style image for this post: "${firstLine}". Style: modern, clean, corporate, ${theme}. High quality, suitable for professional networking. No text overlay.`;
 }
 
-async function generateWithStabilityAI(prompt, apiKey) {
-  const url = `https://api.stability.ai/v1/generate/stable-diffusion-xl-1024-v1-0`;
+async function generateWithPollinations(prompt) {
+  const encoded = encodeURIComponent(prompt);
+  const seed = Math.floor(Math.random() * 1000000);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=576&nologo=true&seed=${seed}&model=flux`;
 
-  const formData = new FormData();
-  formData.append('text_prompts', JSON.stringify([{ text: prompt, weight: 1 }]));
-  formData.append('cfg_scale', '7');
-  formData.append('height', '1024');
-  formData.append('width', '1024');
-  formData.append('samples', '1');
-  formData.append('steps', '30');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Pollinations error (${res.status})`);
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-      body: formData,
-    });
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read image data'));
+    reader.readAsDataURL(blob);
+  });
+}
 
-    if (res.status === 404) {
-      throw new Error('Engine not found. Your API key may not have access. Try Replicate (free) instead.');
-    }
-    if (res.status === 401 || res.status === 403) {
-      throw new Error('Invalid API key. Check platform.stability.ai/account/keys');
-    }
+async function generateWithHuggingFace(prompt, apiKey) {
+  const model = 'stabilityai/stable-diffusion-xl-base-1.0';
+  const url = `https://api-inference.huggingface.co/models/${model}`;
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || `Error: ${res.status}`);
-    if (data.artifacts?.[0]?.base64) {
-      return `data:image/png;base64,${data.artifacts[0].base64}`;
-    }
-    throw new Error('No image returned');
-  } catch (e) {
-    throw new Error(`Stability AI: ${e.message}`);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      inputs: prompt,
+      parameters: { width: 1024, height: 576 },
+    }),
+  });
+
+  if (res.status === 503) throw new Error('Model is loading, please try again in 30 seconds');
+  if (res.status === 401) throw new Error('Invalid Hugging Face token. Get one at huggingface.co/settings/tokens');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Hugging Face error (${res.status})`);
   }
+
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read image'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function generateWithDALLE(prompt, apiKey) {
@@ -450,56 +459,6 @@ async function generateWithDALLE(prompt, apiKey) {
   throw new Error('No image generated');
 }
 
-async function generateWithReplicate(prompt, apiKey) {
-  const modelVersion = 'b6c1372f06e472b0b25c6b44f8100cc4e460cc58cb9722eaa89340b66b07259d';
-
-  const res = await fetch('https://api.replicate.com/v1/predictions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      version: modelVersion,
-      input: {
-        prompt,
-        num_inference_steps: 30,
-        guidance_scale: 7.5,
-        width: 1024,
-        height: 576,
-      },
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    const msg = data.detail?.[0]?.msg || data.detail || JSON.stringify(data);
-    throw new Error(`Replicate error (${res.status}): ${msg}`);
-  }
-
-  const predictionId = data.id;
-  if (!predictionId) throw new Error('No prediction ID returned');
-
-  for (let i = 0; i < 120; i++) {
-    await new Promise(r => setTimeout(r, 500));
-
-    const checkRes = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-    });
-    const checkData = await checkRes.json();
-
-    if (checkData.status === 'succeeded') {
-      if (checkData.output && Array.isArray(checkData.output) && checkData.output[0]) {
-        return checkData.output[0];
-      }
-      throw new Error('No image in Replicate response');
-    }
-    if (checkData.status === 'failed') {
-      throw new Error(`Replicate generation failed: ${checkData.error}`);
-    }
-  }
-  throw new Error('Image generation timed out (2 mins)');
-}
 
 async function generateImage(postText) {
   if (state.imageProvider === 'none') {
@@ -516,9 +475,9 @@ async function generateImage(postText) {
   const prompt = buildImagePrompt(postText);
 
   switch (state.imageProvider) {
-    case 'stability': return generateWithStabilityAI(prompt, apiKey);
-    case 'openai-images': return generateWithDALLE(prompt, apiKey);
-    case 'replicate': return generateWithReplicate(prompt, apiKey);
+    case 'pollinations':   return generateWithPollinations(prompt);
+    case 'openai-images':  return generateWithDALLE(prompt, apiKey);
+    case 'huggingface':    return generateWithHuggingFace(prompt, apiKey);
     default: throw new Error('Unknown image provider.');
   }
 }
