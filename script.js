@@ -666,32 +666,37 @@ function refreshSettingsUI() {
 }
 
 function applySettings() {
-  const p = state.provider;
-  const cfg = PROVIDERS[p];
+  try {
+    const p = state.provider;
+    const cfg = PROVIDERS[p];
 
-  if (!cfg.isManual) {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if (key) {
-      state.apiKeys[p] = key;
-      saveKeys();
+    if (!cfg.isManual) {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (key) {
+        state.apiKeys[p] = key;
+        saveKeys();
+      }
+      const sel = document.getElementById('modelSelect');
+      state.model = sel.value || cfg.defaultModel;
     }
-    const sel = document.getElementById('modelSelect');
-    state.model = sel.value || cfg.defaultModel;
-  }
 
-  // Save image provider settings
-  const imgKey = document.getElementById('imageKeyInput').value.trim();
-  if (imgKey && state.imageProvider !== 'none') {
-    state.imageKeys[state.imageProvider] = imgKey;
-    saveImageKeys();
-  }
-  saveImageProvider();
+    // Save image provider settings
+    const imgKey = document.getElementById('imageKeyInput')?.value.trim() || '';
+    if (imgKey && state.imageProvider !== 'none') {
+      state.imageKeys[state.imageProvider] = imgKey;
+      saveImageKeys();
+    }
+    saveImageProvider();
 
-  saveProvider();
-  updateProviderBadge();
-  updateGenerateButtonLabel();
-  closeSettings();
-  showToast(`Settings saved`, 'success');
+    saveProvider();
+    updateProviderBadge();
+    updateGenerateButtonLabel();
+    closeSettings();
+    showToast(`Settings saved`, 'success');
+  } catch (e) {
+    console.error('Error in applySettings:', e);
+    showToast(`Error: ${e.message}`, 'error');
+  }
 }
 
 function updateProviderBadge() {
@@ -869,7 +874,13 @@ function init() {
   document.getElementById('settingsToggle').addEventListener('click', openSettings);
   document.getElementById('settingsClose').addEventListener('click', closeSettings);
   document.getElementById('settingsOverlay').addEventListener('click', closeSettings);
-  document.getElementById('applySettings').addEventListener('click', applySettings);
+
+  const applyBtn = document.getElementById('applySettings');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', applySettings);
+  } else {
+    console.warn('applySettings button not found');
+  }
 
   // Provider card selection
   document.querySelectorAll('.provider-card').forEach(card => {
