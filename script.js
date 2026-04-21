@@ -882,8 +882,8 @@ function init() {
     console.warn('applySettings button not found');
   }
 
-  // Provider card selection
-  document.querySelectorAll('.provider-card').forEach(card => {
+  // Provider card selection (text/AI providers only)
+  document.querySelectorAll('.provider-card[data-provider]').forEach(card => {
     card.addEventListener('click', () => {
       state.provider = card.dataset.provider;
       const cfg = PROVIDERS[state.provider];
