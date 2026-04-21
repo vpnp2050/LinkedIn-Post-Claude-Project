@@ -409,6 +409,129 @@ body {
 .toggle-item input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
 
 /* =========================================
+   Inspiration Box
+   ========================================= */
+.inspiration-box {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  transition: border-color var(--transition);
+}
+.inspiration-box:has(.inspiration-body:not(.hidden)) {
+  border-color: var(--li-blue);
+}
+
+.inspiration-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--transition);
+}
+.inspiration-toggle:hover { background: var(--li-blue-light); }
+
+.inspiration-toggle-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--li-blue);
+  font-weight: 700;
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+.inspiration-toggle-icon.open { transform: rotate(45deg); }
+
+.inspiration-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--border);
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+}
+
+.inspiration-body {
+  padding: 1rem;
+  border-top: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #fff;
+}
+
+.inspiration-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  background: var(--li-blue-light);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--li-blue);
+}
+.inspiration-hint em { font-style: normal; font-weight: 700; color: var(--li-blue); }
+
+.url-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 0.6rem 0 0.75rem;
+  background: #fff;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.url-input-row:focus-within {
+  border-color: var(--li-blue);
+  box-shadow: 0 0 0 3px rgba(10,102,194,0.12);
+}
+.url-icon { color: var(--text-muted); display: flex; align-items: center; flex-shrink: 0; }
+.url-input {
+  border: none !important;
+  box-shadow: none !important;
+  padding-left: 0.35rem !important;
+  padding-right: 0.35rem !important;
+}
+.url-input:focus { box-shadow: none !important; }
+
+.btn-clear-url {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.btn-clear-url:hover { color: var(--danger); }
+
+.inspiration-mode-row {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.83rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.radio-item input[type="radio"] { accent-color: var(--li-blue); cursor: pointer; }
+
+/* =========================================
    Generate Button
    ========================================= */
 .btn-generate {

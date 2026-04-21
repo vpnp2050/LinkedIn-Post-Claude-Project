@@ -185,6 +185,49 @@
             placeholder="Describe your topic, experience, achievement, or key message you want to share..."></textarea>
         </div>
 
+        <!-- Inspiration Source -->
+        <div class="inspiration-box" id="inspirationBox">
+          <button class="inspiration-toggle" id="inspirationToggle" type="button">
+            <span class="inspiration-toggle-icon" id="inspirationToggleIcon">＋</span>
+            <span>Get inspired by an existing post</span>
+            <span class="inspiration-badge">Optional</span>
+          </button>
+          <div class="inspiration-body hidden" id="inspirationBody">
+            <p class="inspiration-hint">
+              Visit the LinkedIn / social media post, copy its URL and text, paste below.
+              The AI will generate a <em>similar style</em> post on your topic.
+            </p>
+            <div class="form-group" style="margin-bottom:0.75rem">
+              <label class="form-label" for="inspirationUrl">Post URL <span class="optional">(optional — for reference only)</span></label>
+              <div class="url-input-row">
+                <span class="url-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                </span>
+                <input type="url" class="form-input url-input" id="inspirationUrl"
+                  placeholder="https://www.linkedin.com/posts/... or any social media URL">
+                <button class="btn-clear-url hidden" id="clearUrlBtn" title="Clear URL">&times;</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" for="inspirationText">
+                Paste the post text to inspire from <span class="required">*</span>
+              </label>
+              <textarea id="inspirationText" class="form-textarea" rows="4"
+                placeholder="Paste the full text of the post you want to draw inspiration from..."></textarea>
+              <div class="inspiration-mode-row">
+                <label class="radio-item">
+                  <input type="radio" name="inspirationMode" value="similar" checked>
+                  <span>Write a similar post on my topic</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="inspirationMode" value="rewrite">
+                  <span>Rewrite this post for my context</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Tone -->
         <div class="form-group">
           <label class="form-label">Tone &amp; Style</label>

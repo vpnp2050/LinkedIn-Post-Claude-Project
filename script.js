@@ -220,7 +220,8 @@ function escapeHtml(str) {
 // Prompt Builder
 // =========================================
 function buildPrompt(data) {
-  const { topic, tone, length, audience, hashtags, emojis, cta, hook, custom } = data;
+  const { topic, tone, length, audience, hashtags, emojis, cta, hook, custom,
+          inspirationUrl, inspirationText, inspirationMode } = data;
 
   const rules = [
     'Write a powerful hook as the FIRST 1–2 lines. This is what appears before "see more" — make it irresistible.',
@@ -237,8 +238,40 @@ function buildPrompt(data) {
     custom ? `Additional instructions: ${custom}` : '',
   ].filter(Boolean);
 
-  return `You are an expert LinkedIn content creator who writes posts that get thousands of reactions.
+  const hasInspiration = inspirationText.length > 0;
+  let inspirationSection = '';
+  if (hasInspiration) {
+    if (inspirationMode === 'rewrite') {
+      inspirationSection = `
+REWRITE TASK:
+The user wants you to rewrite the following post adapted to their own topic and context.
+Study its structure, opening hook, paragraph flow, and call-to-action style — then produce
+a fresh post that feels like a natural evolution of that style but is 100% original content.
+${inspirationUrl ? `Source URL (for context only): ${inspirationUrl}` : ''}
 
+REFERENCE POST TO REWRITE:
+"""
+${inspirationText}
+"""
+`;
+    } else {
+      inspirationSection = `
+INSPIRATION REFERENCE:
+Study the structure, tone, hook style, and flow of the post below. Write a NEW, completely
+original post on the user's topic that FEELS SIMILAR in style and energy — same kind of
+opening, similar paragraph rhythm, comparable emotional resonance.
+${inspirationUrl ? `Source URL (for context only): ${inspirationUrl}` : ''}
+
+REFERENCE POST:
+"""
+${inspirationText}
+"""
+`;
+    }
+  }
+
+  return `You are an expert LinkedIn content creator who writes posts that get thousands of reactions.
+${inspirationSection}
 Create a LinkedIn post with the following details:
 
 TOPIC / CONTENT:
@@ -781,6 +814,7 @@ function updateGenerateButtonLabel() {
 // Data collection
 // =========================================
 function collectFormData() {
+  const inspirationMode = document.querySelector('input[name="inspirationMode"]:checked')?.value || 'similar';
   return {
     topic: document.getElementById('topicInput').value.trim(),
     tone: state.tone,
@@ -791,6 +825,9 @@ function collectFormData() {
     cta: document.getElementById('ctaToggle').checked,
     hook: document.getElementById('hookToggle').checked,
     custom: document.getElementById('customInstructions').value.trim(),
+    inspirationUrl: document.getElementById('inspirationUrl').value.trim(),
+    inspirationText: document.getElementById('inspirationText').value.trim(),
+    inspirationMode,
   };
 }
 
@@ -859,6 +896,13 @@ async function handleGenerate() {
   if (!data.topic) {
     showError('Please describe what you want to post about.');
     document.getElementById('topicInput').focus();
+    return;
+  }
+
+  const inspirationOpen = !document.getElementById('inspirationBody').classList.contains('hidden');
+  if (inspirationOpen && !data.inspirationText) {
+    showError('You opened the Inspiration section but left the post text empty. Paste a reference post or close the section.');
+    document.getElementById('inspirationText').focus();
     return;
   }
 
@@ -989,6 +1033,30 @@ function init() {
       btn.classList.add('active');
       state.tone = btn.dataset.tone;
     });
+  });
+
+  // Inspiration box toggle
+  document.getElementById('inspirationToggle').addEventListener('click', () => {
+    const body = document.getElementById('inspirationBody');
+    const icon = document.getElementById('inspirationToggleIcon');
+    const isOpen = !body.classList.contains('hidden');
+    setHidden(body, isOpen);
+    icon.textContent = isOpen ? '＋' : '－';
+    icon.classList.toggle('open', !isOpen);
+    if (isOpen) {
+      document.getElementById('inspirationUrl').value = '';
+      document.getElementById('inspirationText').value = '';
+      setHidden(document.getElementById('clearUrlBtn'), true);
+    }
+  });
+
+  // URL clear button
+  document.getElementById('inspirationUrl').addEventListener('input', e => {
+    setHidden(document.getElementById('clearUrlBtn'), !e.target.value);
+  });
+  document.getElementById('clearUrlBtn').addEventListener('click', () => {
+    document.getElementById('inspirationUrl').value = '';
+    setHidden(document.getElementById('clearUrlBtn'), true);
   });
 
   // Generate
