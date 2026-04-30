@@ -1150,6 +1150,369 @@ function handleProcessResponse() {
 }
 
 // =========================================
+// LinkedIn Card Generation
+// =========================================
+
+const CARD_PROFILE = {
+  name: 'Saurabh',
+  role: 'Fractional CMO',
+  headline: 'Early-Stage Startups & SaaS Growth',
+};
+
+const CC = {
+  headerBg: '#0891B2',
+  accent: '#B87333',
+  headlineTxt: '#7A3B1E',
+  mutedHeader: '#BAE6FD',
+  body: '#1E293B',
+  subtext: '#64748B',
+  border: '#E2E8F0',
+  alertBg: '#FFF7ED',
+  pointsBg: '#F8FAFC',
+  footerBg: '#CCEEF5',
+  white: '#FFFFFF',
+};
+
+let headshotImage = null;
+
+function preloadHeadshot() {
+  const img = new Image();
+  img.onload = () => { headshotImage = img; };
+  img.onerror = () => { headshotImage = null; };
+  img.src = './headshot.png';
+}
+
+async function extractCardData(postText) {
+  const extractPrompt = `You are a data extractor. Given a LinkedIn post, extract the following fields as a JSON object:
+
+{
+  "insight": "One punchy sentence capturing the core insight of the post (max 18 words)",
+  "col1Label": "Label for column 1 (2-3 UPPERCASE words, topic/theme)",
+  "col1Body": "2-sentence body for column 1",
+  "col2Label": "Label for column 2 (2-3 UPPERCASE words)",
+  "col2Body": "2-sentence body for column 2",
+  "col3Label": "Label for column 3 (2-3 UPPERCASE words)",
+  "col3Body": "2-sentence body for column 3",
+  "point1": "Core argument point 1 (max 15 words)",
+  "point2": "Core argument point 2 (max 15 words)",
+  "point3": "Core argument point 3 (max 15 words)",
+  "quote": "A memorable closing quote or key takeaway (max 20 words)"
+}
+
+Return ONLY the raw JSON with no markdown, no explanation.
+
+POST:
+${postText}`;
+
+  try {
+    let jsonStr = '';
+    const p = state.provider;
+    const cfg = PROVIDERS[p];
+
+    if (p === 'gemini') {
+      const key = state.apiKeys['gemini'];
+      if (!key) throw new Error('No Gemini key saved');
+      const model = state.model || cfg.defaultModel;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: extractPrompt }] }],
+          generationConfig: { maxOutputTokens: 600, temperature: 0.3 },
+        }),
+      });
+      const data = await res.json();
+      jsonStr = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } else if (p === 'claude-api') {
+      const key = state.apiKeys['claude-api'];
+      if (!key) throw new Error('No Claude API key saved');
+      const model = state.model || cfg.defaultModel;
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 600,
+          messages: [{ role: 'user', content: extractPrompt }],
+        }),
+      });
+      const data = await res.json();
+      jsonStr = data.content?.[0]?.text || '';
+    } else if (p === 'openai') {
+      const key = state.apiKeys['openai'];
+      if (!key) throw new Error('No OpenAI key saved');
+      const model = state.model || cfg.defaultModel;
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model, max_tokens: 600, temperature: 0.3,
+          messages: [{ role: 'user', content: extractPrompt }],
+        }),
+      });
+      const data = await res.json();
+      jsonStr = data.choices?.[0]?.message?.content || '';
+    } else if (p === 'groq') {
+      const key = state.apiKeys['groq'];
+      if (!key) throw new Error('No Groq key saved');
+      const model = state.model || cfg.defaultModel;
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model, max_tokens: 600, temperature: 0.3,
+          messages: [{ role: 'user', content: extractPrompt }],
+        }),
+      });
+      const data = await res.json();
+      jsonStr = data.choices?.[0]?.message?.content || '';
+    } else if (p === 'mistral') {
+      const key = state.apiKeys['mistral'];
+      if (!key) throw new Error('No Mistral key saved');
+      const model = state.model || cfg.defaultModel;
+      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model, max_tokens: 600, temperature: 0.3,
+          messages: [{ role: 'user', content: extractPrompt }],
+        }),
+      });
+      const data = await res.json();
+      jsonStr = data.choices?.[0]?.message?.content || '';
+    } else {
+      throw new Error('Card generation requires an API provider (not manual mode).');
+    }
+
+    jsonStr = jsonStr.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    throw new Error('Failed to extract card data: ' + e.message);
+  }
+}
+
+function cardWrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = String(text || '').split(' ');
+  let line = '';
+  let curY = y;
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), x, curY);
+      line = words[n] + ' ';
+      curY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), x, curY);
+  return curY;
+}
+
+function cardWrapCenter(ctx, text, cx, y, maxWidth, lineHeight) {
+  const words = String(text || '').split(' ');
+  let line = '';
+  let curY = y;
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), cx, curY);
+      line = words[n] + ' ';
+      curY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), cx, curY);
+  return curY;
+}
+
+function drawLinkedInCard(canvas, data) {
+  const ctx = canvas.getContext('2d');
+  const W = 1080, H = 966;
+  ctx.clearRect(0, 0, W, H);
+
+  // Section 1: Header
+  const headerH = 230;
+  ctx.fillStyle = CC.headerBg;
+  ctx.fillRect(0, 0, W, headerH);
+
+  const avatarColW = 275;
+  const avatarCY = headerH / 2;
+  const avatarR = 100;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(avatarColW / 2, avatarCY, avatarR, 0, Math.PI * 2);
+  ctx.clip();
+  if (headshotImage) {
+    const img = headshotImage;
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    const cx = iw / 2;
+    const half = Math.min(iw, ih) * 0.36;
+    ctx.drawImage(img, cx - half, 0, half * 2, half * 2,
+      avatarColW / 2 - avatarR, avatarCY - avatarR, avatarR * 2, avatarR * 2);
+  } else {
+    const grad = ctx.createRadialGradient(avatarColW / 2, avatarCY, 0, avatarColW / 2, avatarCY, avatarR);
+    grad.addColorStop(0, '#BAE6FD');
+    grad.addColorStop(1, '#0e7490');
+    ctx.fillStyle = grad;
+    ctx.fillRect(avatarColW / 2 - avatarR, avatarCY - avatarR, avatarR * 2, avatarR * 2);
+  }
+  ctx.restore();
+
+  const textStartX = avatarColW + 30;
+  const textAreaW = W - textStartX - 40;
+  ctx.fillStyle = CC.white;
+  ctx.font = 'bold 52px Arial, sans-serif';
+  ctx.fillText(CARD_PROFILE.name, textStartX, 75);
+  ctx.font = 'bold 32px Arial, sans-serif';
+  ctx.fillStyle = CC.mutedHeader;
+  ctx.fillText(CARD_PROFILE.role, textStartX, 122);
+  ctx.font = '26px Arial, sans-serif';
+  cardWrapText(ctx, CARD_PROFILE.headline, textStartX, 162, textAreaW, 34);
+
+  // Section 2: Copper divider
+  let curY = headerH;
+  ctx.fillStyle = CC.accent;
+  ctx.fillRect(0, curY, W, 4);
+
+  // Section 3: Alert box
+  curY += 4;
+  const alertH = 90;
+  ctx.fillStyle = CC.alertBg;
+  ctx.fillRect(0, curY, W, alertH);
+  ctx.fillStyle = CC.accent;
+  ctx.fillRect(0, curY, 8, alertH);
+  ctx.fillStyle = CC.body;
+  ctx.font = 'bold 28px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  cardWrapCenter(ctx, String(data.insight || ''), W / 2, curY + 34, W - 80, 36);
+  ctx.textAlign = 'left';
+  curY += alertH;
+
+  // Section 4: 3-column row
+  const colRowH = 160;
+  ctx.fillStyle = CC.white;
+  ctx.fillRect(0, curY, W, colRowH);
+  const colW = Math.floor(W / 3);
+  const cols = [
+    { label: data.col1Label, body: data.col1Body },
+    { label: data.col2Label, body: data.col2Body },
+    { label: data.col3Label, body: data.col3Body },
+  ];
+  cols.forEach((col, i) => {
+    const colX = i * colW;
+    if (i > 0) { ctx.fillStyle = CC.border; ctx.fillRect(colX, curY, 1, colRowH); }
+    const padX = colX + 28;
+    const maxColW = colW - 56;
+    ctx.fillStyle = CC.accent;
+    ctx.font = 'bold 20px Arial, sans-serif';
+    ctx.fillText(String(col.label || '').toUpperCase(), padX, curY + 38);
+    ctx.fillStyle = CC.body;
+    ctx.font = '21px Arial, sans-serif';
+    cardWrapText(ctx, col.body, padX, curY + 68, maxColW, 28);
+  });
+  curY += colRowH;
+
+  // Section 5: 3 numbered points
+  const pointsH = 240;
+  ctx.fillStyle = CC.pointsBg;
+  ctx.fillRect(0, curY, W, pointsH);
+  ctx.fillStyle = CC.border;
+  ctx.fillRect(0, curY, W, 1);
+  const points = [data.point1, data.point2, data.point3];
+  const ptSpacing = Math.floor(W / 3);
+  points.forEach((pt, i) => {
+    const ptX = i * ptSpacing;
+    const cirX = ptX + 50;
+    const cirY = curY + 70;
+    ctx.beginPath();
+    ctx.arc(cirX, cirY, 32, 0, Math.PI * 2);
+    ctx.strokeStyle = CC.accent;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = CC.accent;
+    ctx.font = 'bold 30px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(String(i + 1), cirX, cirY + 10);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = CC.body;
+    ctx.font = '22px Arial, sans-serif';
+    cardWrapText(ctx, pt, ptX + 94, curY + 56, ptSpacing - 114, 30);
+  });
+  curY += pointsH;
+
+  // Section 6: Footer quote
+  const footerH = H - curY;
+  ctx.fillStyle = CC.accent;
+  ctx.fillRect(0, curY, W, 3);
+  curY += 3;
+  ctx.fillStyle = CC.footerBg;
+  ctx.fillRect(0, curY, W, footerH - 3);
+  ctx.fillStyle = CC.headlineTxt;
+  ctx.font = 'italic bold 30px Georgia, serif';
+  ctx.textAlign = 'center';
+  cardWrapCenter(ctx, `"${data.quote}"`, W / 2, curY + 52, W - 120, 40);
+  ctx.textAlign = 'left';
+}
+
+async function handleGenerateCard() {
+  const post = state.lastPost || document.getElementById('editablePost').value.trim();
+  if (!post) {
+    showToast('Generate a post first, then click Generate Card', 'error');
+    return;
+  }
+  if (currentProviderIsManual()) {
+    showToast('Card generation requires an API provider (not manual mode)', 'error');
+    return;
+  }
+
+  const cardSection = document.getElementById('cardSection');
+  const cardLoading = document.getElementById('cardLoading');
+  const canvas = document.getElementById('linkedinCard');
+  const btn = document.getElementById('generateCardBtn');
+
+  setHidden(cardSection, false);
+  setHidden(cardLoading, false);
+  canvas.style.display = 'none';
+  btn.disabled = true;
+  cardSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    document.getElementById('cardLoadingText').textContent = 'Extracting insights with AI…';
+    const data = await extractCardData(post);
+    document.getElementById('cardLoadingText').textContent = 'Drawing card…';
+    drawLinkedInCard(canvas, data);
+    setHidden(cardLoading, true);
+    canvas.style.display = 'block';
+    showToast('Card ready! Click Download PNG to save.', 'success');
+  } catch (err) {
+    setHidden(cardLoading, true);
+    canvas.style.display = 'block';
+    showToast('Card error: ' + (err.message || 'Unknown error'), 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function handleDownloadCard() {
+  const canvas = document.getElementById('linkedinCard');
+  const link = document.createElement('a');
+  link.download = `linkedin-card-${Date.now()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('Card downloaded!', 'success');
+}
+
+// =========================================
 // Init
 // =========================================
 function init() {
@@ -1267,6 +1630,10 @@ function init() {
   document.getElementById('regenerateImageBtn').addEventListener('click', handleGenerateImage);
   document.getElementById('downloadImageBtn').addEventListener('click', handleDownloadImage);
 
+  // Card generation
+  document.getElementById('generateCardBtn').addEventListener('click', handleGenerateCard);
+  document.getElementById('downloadCardBtn').addEventListener('click', handleDownloadCard);
+
   // Image provider cards
   document.querySelectorAll('[data-image-provider]').forEach(card => {
     card.addEventListener('click', () => {
@@ -1322,6 +1689,9 @@ function init() {
   // Restore model if saved
   const cfg = PROVIDERS[state.provider];
   if (cfg) state.model = cfg.defaultModel;
+
+  // Preload headshot for card generation
+  preloadHeadshot();
 }
 
 document.addEventListener('DOMContentLoaded', init);

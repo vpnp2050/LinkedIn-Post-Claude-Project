@@ -312,6 +312,10 @@
             <span id="generateBtnText">Generate LinkedIn Post</span>
             <div class="spinner hidden" id="spinner"></div>
           </button>
+          <button class="btn-card-gen" id="generateCardBtn" title="Generate a shareable LinkedIn card from the current post">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Generate Card
+          </button>
         </div>
 
         <div class="error-msg hidden" id="errorMsg"></div>
@@ -403,6 +407,26 @@
             <span class="edit-hint">Edits sync to preview above</span>
           </div>
           <textarea id="editablePost" class="form-textarea editable-post" rows="10"></textarea>
+        </div>
+      </section>
+
+      <!-- LinkedIn Card Generator -->
+      <section class="card hidden" id="cardSection">
+        <div class="output-header">
+          <h2 class="card-title">LinkedIn Card Preview</h2>
+          <div class="output-actions">
+            <button class="btn-primary btn-sm" id="downloadCardBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PNG
+            </button>
+          </div>
+        </div>
+        <div class="card-canvas-wrapper">
+          <div class="card-loading hidden" id="cardLoading">
+            <div class="spinner" style="border-color:rgba(8,145,178,0.3);border-top-color:#0891B2;width:28px;height:28px"></div>
+            <p id="cardLoadingText">Extracting insights with AI…</p>
+          </div>
+          <canvas id="linkedinCard" width="1080" height="966"></canvas>
         </div>
       </section>
 
