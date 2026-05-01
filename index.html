@@ -36,11 +36,9 @@
       <h2>AI Provider Settings</h2>
       <button class="btn-close" id="settingsClose">&times;</button>
     </div>
-
     <div class="settings-body">
       <p class="settings-hint">Choose your AI provider. API keys are stored locally in your browser only.</p>
 
-      <!-- Provider Cards -->
       <div class="provider-grid">
         <div class="provider-card" data-provider="claude-api">
           <div class="provider-card-icon">🤖</div>
@@ -74,7 +72,6 @@
         </div>
       </div>
 
-      <!-- API Key Section -->
       <div class="api-key-section" id="apiKeySection">
         <label class="form-label" id="apiKeyLabel">API Key</label>
         <div class="api-key-row">
@@ -91,13 +88,11 @@
         <div class="key-status" id="keyStatus"></div>
       </div>
 
-      <!-- Model Selector -->
       <div class="model-section" id="modelSection">
         <label class="form-label">Model</label>
         <select class="form-select" id="modelSelect"></select>
       </div>
 
-      <!-- Manual Mode Info -->
       <div class="manual-info hidden" id="manualInfo">
         <div class="info-box">
           <strong>How Manual Mode Works:</strong>
@@ -110,7 +105,6 @@
         </div>
       </div>
 
-      <!-- Image Generation Settings -->
       <div class="divider"></div>
       <h3 class="settings-section-title">Image Generation (Optional)</h3>
       <p class="settings-hint">Generate images to pair with your posts</p>
@@ -168,21 +162,23 @@
     </div>
   </aside>
 
-  <!-- Main Content -->
+  <!-- Main: Split Layout -->
   <main class="main">
-    <div class="container">
+    <div class="split-layout">
 
-      <!-- Form Card -->
-      <section class="card" id="formCard">
-        <div class="card-header">
-          <h1 class="card-title">Create Your LinkedIn Post</h1>
-          <p class="card-sub">Powered by AI — craft posts that engage and inspire</p>
+      <!-- ===== LEFT PANEL: Post Parameters ===== -->
+      <div class="left-panel">
+        <div class="panel-header">
+          <div>
+            <h1 class="panel-title">Post Parameters</h1>
+            <p class="panel-sub">Configure your post below</p>
+          </div>
         </div>
 
         <!-- Topic -->
         <div class="form-group">
           <label class="form-label" for="topicInput">What do you want to post about? <span class="required">*</span></label>
-          <textarea id="topicInput" class="form-textarea" rows="4"
+          <textarea id="topicInput" class="form-textarea" rows="3"
             placeholder="Describe your topic, experience, achievement, or key message you want to share..."></textarea>
         </div>
 
@@ -199,21 +195,19 @@
               The AI will generate a <em>similar style</em> post on your topic.
             </p>
             <div class="form-group" style="margin-bottom:0.75rem">
-              <label class="form-label" for="inspirationUrl">Post URL <span class="optional">(optional — for reference only)</span></label>
+              <label class="form-label" for="inspirationUrl">Post URL <span class="optional">(optional)</span></label>
               <div class="url-input-row">
                 <span class="url-icon">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
                 </span>
                 <input type="url" class="form-input url-input" id="inspirationUrl"
-                  placeholder="https://www.linkedin.com/posts/... or any social media URL">
+                  placeholder="https://www.linkedin.com/posts/...">
                 <button class="btn-clear-url hidden" id="clearUrlBtn" title="Clear URL">&times;</button>
               </div>
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label" for="inspirationText">
-                Paste the post text to inspire from <span class="required">*</span>
-              </label>
-              <textarea id="inspirationText" class="form-textarea" rows="4"
+              <label class="form-label" for="inspirationText">Paste the post text <span class="required">*</span></label>
+              <textarea id="inspirationText" class="form-textarea" rows="3"
                 placeholder="Paste the full text of the post you want to draw inspiration from..."></textarea>
               <div class="inspiration-mode-row">
                 <label class="radio-item">
@@ -244,7 +238,7 @@
           </div>
         </div>
 
-        <!-- Length + Audience row -->
+        <!-- Length + Audience -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="lengthSelect">Post Length</label>
@@ -257,7 +251,7 @@
           <div class="form-group">
             <label class="form-label" for="audienceInput">Target Audience</label>
             <input type="text" class="form-input" id="audienceInput"
-              placeholder="e.g., Tech leaders, Marketers, Entrepreneurs...">
+              placeholder="e.g., Tech leaders, Marketers...">
           </div>
         </div>
 
@@ -292,51 +286,54 @@
         <div class="form-group">
           <label class="form-label" for="customInstructions">Additional Instructions <span class="optional">(optional)</span></label>
           <textarea id="customInstructions" class="form-textarea" rows="2"
-            placeholder="e.g., Mention my company XYZ, include a specific stat, use first-person storytelling..."></textarea>
+            placeholder="e.g., Mention my company XYZ, include a specific stat..."></textarea>
         </div>
 
-        <!-- Post Count + Generate Button -->
+        <!-- Post Count + Generate -->
         <div class="generate-row">
           <div class="post-count-selector">
             <label class="form-label" style="margin-bottom:0">Generate</label>
             <div class="count-btns">
-              <button class="count-btn active" data-count="1">1 post</button>
-              <button class="count-btn" data-count="2">2 posts</button>
-              <button class="count-btn" data-count="3">3 posts</button>
+              <button class="count-btn active" data-count="1">1</button>
+              <button class="count-btn" data-count="2">2</button>
+              <button class="count-btn" data-count="3">3</button>
             </div>
           </div>
           <button class="btn-generate" id="generateBtn">
             <span class="btn-generate-icon" id="generateIcon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             </span>
-            <span id="generateBtnText">Generate LinkedIn Post</span>
+            <span id="generateBtnText">Generate Post</span>
             <div class="spinner hidden" id="spinner"></div>
-          </button>
-          <button class="btn-card-gen" id="generateCardBtn" title="Generate a shareable LinkedIn card from the current post">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            Generate Card
           </button>
         </div>
 
         <div class="error-msg hidden" id="errorMsg"></div>
-      </section>
+      </div>
 
-      <!-- Output Card -->
-      <section class="card hidden" id="outputCard">
-        <div class="output-header">
-          <h2 class="card-title" id="outputTitle">Your LinkedIn Post</h2>
-          <div class="output-actions">
+      <!-- ===== RIGHT PANEL: Preview & Edit ===== -->
+      <div class="right-panel" id="outputCard">
+
+        <!-- Panel header -->
+        <div class="panel-header">
+          <h2 class="panel-title" id="outputTitle">Preview &amp; Edit</h2>
+          <div class="panel-header-actions">
+            <span class="char-count" id="charCount">0 / 3,000</span>
             <button class="btn-gdocs" id="exportDocsBtn" title="Open Google Docs and copy posts">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-              Google Docs
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Google Docs</span>
             </button>
             <button class="btn-docx" id="exportDocxBtn" title="Download as .docx Word file">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download .docx
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>.docx</span>
             </button>
             <button class="btn-secondary btn-sm" id="regenerateBtn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
               Regenerate
+            </button>
+            <button class="btn-primary btn-sm" id="copyBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy Post
             </button>
           </div>
         </div>
@@ -344,16 +341,7 @@
         <!-- Post Tabs (shown when 2+ posts) -->
         <div class="post-tabs hidden" id="postTabs"></div>
 
-        <!-- Per-post actions row -->
-        <div class="post-actions-bar">
-          <span class="char-count" id="charCount">0 / 3,000</span>
-          <button class="btn-primary btn-sm" id="copyBtn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            Copy Post
-          </button>
-        </div>
-
-        <!-- LinkedIn Preview -->
+        <!-- LinkedIn Preview (always visible) -->
         <div class="linkedin-preview">
           <div class="lp-header">
             <div class="lp-avatar">
@@ -364,95 +352,105 @@
               <div class="lp-time">Just now &bull; <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg> Public</div>
             </div>
           </div>
-          <div class="lp-content" id="lpContent"></div>
+          <div class="lp-content" id="lpContent">
+            <span class="lp-placeholder">Your generated post will appear here…</span>
+          </div>
           <div class="lp-reactions">
             <span>👍 ❤️ 💡</span>
             <span class="lp-stats">42 reactions &bull; 8 comments</span>
           </div>
         </div>
 
+        <!-- Edit textarea -->
+        <div class="edit-section">
+          <div class="edit-label-row">
+            <label class="form-label" for="editablePost">Edit Post</label>
+            <span class="edit-hint">Edits sync to preview above</span>
+          </div>
+          <textarea id="editablePost" class="form-textarea editable-post" rows="9"
+            placeholder="Generated text will be editable here…"></textarea>
+        </div>
+
         <!-- Image Generation Section -->
-        <div class="image-section hidden" id="imageSection" style="margin-top:1.5rem">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem">
-            <h3 class="card-title" style="margin:0; font-size:0.95rem">Pair with an Image</h3>
+        <div class="image-section hidden" id="imageSection">
+          <div class="image-section-header">
+            <h3 class="section-label">Pair with an Image</h3>
             <button class="btn-primary btn-sm" id="generateImageBtn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
               Generate Image
             </button>
           </div>
           <div class="image-preview-container">
             <div class="image-placeholder hidden" id="imagePlaceholder">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
               <p id="imagePlaceholderText">Click "Generate Image" to create a visual for your post</p>
             </div>
             <img id="generatedImage" class="generated-image hidden" alt="Generated image for post">
             <div class="image-loading hidden" id="imageLoading">
-              <div class="spinner"></div>
-              <p>Generating image...</p>
+              <div class="spinner" style="border-color:rgba(10,102,194,0.2);border-top-color:var(--li-blue)"></div>
+              <p>Generating image…</p>
             </div>
           </div>
           <div class="image-actions hidden" id="imageActions">
             <button class="btn-secondary btn-sm" id="regenerateImageBtn">Regenerate</button>
             <button class="btn-primary btn-sm" id="downloadImageBtn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download
             </button>
           </div>
         </div>
 
-        <!-- Editable Area -->
-        <div class="form-group" style="margin-top:1.25rem">
-          <div class="edit-label-row">
-            <label class="form-label" for="editablePost">Edit Post</label>
-            <span class="edit-hint">Edits sync to preview above</span>
-          </div>
-          <textarea id="editablePost" class="form-textarea editable-post" rows="10"></textarea>
+        <!-- Generate Card row -->
+        <div class="card-gen-row">
+          <button class="btn-card-gen" id="generateCardBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Generate Card
+          </button>
+          <span class="card-gen-hint">Creates a branded 1080×966px card • requires API provider</span>
         </div>
-      </section>
 
-      <!-- LinkedIn Card Generator -->
-      <section class="card hidden" id="cardSection">
-        <div class="output-header">
-          <h2 class="card-title">LinkedIn Card Preview</h2>
-          <div class="output-actions">
+        <!-- Card Canvas Section -->
+        <div class="card-canvas-section hidden" id="cardSection">
+          <div class="section-header-row">
+            <h3 class="section-label">LinkedIn Card Preview</h3>
             <button class="btn-primary btn-sm" id="downloadCardBtn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download PNG
             </button>
           </div>
-        </div>
-        <div class="card-canvas-wrapper">
-          <div class="card-loading hidden" id="cardLoading">
-            <div class="spinner" style="border-color:rgba(8,145,178,0.3);border-top-color:#0891B2;width:28px;height:28px"></div>
-            <p id="cardLoadingText">Extracting insights with AI…</p>
+          <div class="card-canvas-wrapper">
+            <div class="card-loading hidden" id="cardLoading">
+              <div class="spinner" style="border-color:rgba(8,145,178,0.25);border-top-color:#0891B2;width:26px;height:26px"></div>
+              <p id="cardLoadingText">Extracting insights with AI…</p>
+            </div>
+            <canvas id="linkedinCard" width="1080" height="966"></canvas>
           </div>
-          <canvas id="linkedinCard" width="1080" height="966"></canvas>
-        </div>
-      </section>
-
-      <!-- Manual Mode Card -->
-      <section class="card hidden" id="manualCard">
-        <div class="card-header">
-          <h2 class="card-title">Manual Mode — Claude.ai (Pro)</h2>
-          <p class="card-sub">Copy this prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a></p>
         </div>
 
-        <div class="prompt-box-wrapper">
-          <div class="prompt-box" id="manualPromptBox"></div>
-          <button class="btn-copy-prompt" id="copyPromptBtn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            Copy Prompt
-          </button>
+        <!-- Manual Mode Section -->
+        <div class="manual-section hidden" id="manualCard">
+          <div class="section-header-row">
+            <div>
+              <h3 class="section-label">Manual Mode — Claude.ai (Pro)</h3>
+              <p class="panel-sub" style="margin-top:0.2rem">Copy this prompt and paste it into <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a></p>
+            </div>
+          </div>
+          <div class="prompt-box-wrapper">
+            <div class="prompt-box" id="manualPromptBox"></div>
+            <button class="btn-copy-prompt" id="copyPromptBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy Prompt
+            </button>
+          </div>
+          <div class="manual-step2">
+            <h3 class="step-label">Step 2 — Paste Claude's Response</h3>
+            <textarea id="pasteResponse" class="form-textarea" rows="7"
+              placeholder="After getting your post from claude.ai, paste it here to preview and copy..."></textarea>
+            <button class="btn-primary" id="processResponseBtn">Preview &amp; Format Post</button>
+          </div>
         </div>
 
-        <div class="manual-step2">
-          <h3 class="step-label">Step 2 — Paste Claude's Response</h3>
-          <textarea id="pasteResponse" class="form-textarea" rows="8"
-            placeholder="After getting your post from claude.ai, paste it here to preview and copy..."></textarea>
-          <button class="btn-primary" id="processResponseBtn">Preview &amp; Format Post</button>
-        </div>
-      </section>
-
+      </div><!-- end right-panel / outputCard -->
     </div>
   </main>
 

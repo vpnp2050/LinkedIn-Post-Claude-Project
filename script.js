@@ -607,11 +607,12 @@ function renderOutput(text) {
   document.getElementById('editablePost').value = clean;
   updatePreview(clean);
   setHidden(document.getElementById('postTabs'), true);
-  setHidden(document.getElementById('outputCard'), false);
   setHidden(document.getElementById('manualCard'), true);
   setHidden(document.getElementById('imageSection'), false);
   resetImageUI();
-  document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('outputTitle').textContent = 'Preview & Edit';
+  // Scroll right panel to top
+  document.getElementById('outputCard').scrollTop = 0;
 }
 
 function resetImageUI() {
@@ -927,7 +928,7 @@ async function handleGenerate() {
   if (currentProviderIsManual()) {
     document.getElementById('manualPromptBox').textContent = basePrompt;
     setHidden(document.getElementById('manualCard'), false);
-    setHidden(document.getElementById('outputCard'), true);
+    // Scroll right panel to show manual section
     document.getElementById('manualCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
@@ -966,7 +967,7 @@ function renderOutputShell() {
   const count = state.postCount;
   const tabsEl = document.getElementById('postTabs');
 
-  setHidden(document.getElementById('outputCard'), false);
+  // Right panel is always visible — just hide manual section, show image section
   setHidden(document.getElementById('manualCard'), true);
 
   // Build tabs
@@ -988,7 +989,8 @@ function renderOutputShell() {
   resetImageUI();
   setHidden(document.getElementById('imageSection'), false);
 
-  document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll right panel to top
+  document.getElementById('outputCard').scrollTop = 0;
 }
 
 function showPostAtIndex(index) {
@@ -1000,7 +1002,7 @@ function showPostAtIndex(index) {
 
   // Update title
   document.getElementById('outputTitle').textContent =
-    state.postCount > 1 ? `Post ${index + 1} of ${state.postCount}` : 'Your LinkedIn Post';
+    state.postCount > 1 ? `Post ${index + 1} of ${state.postCount}` : 'Preview & Edit';
 
   // Update tab active state
   document.querySelectorAll('.post-tab-btn').forEach((btn, i) => {
@@ -1618,7 +1620,7 @@ function init() {
 
   // Regenerate
   document.getElementById('regenerateBtn').addEventListener('click', () => {
-    document.getElementById('outputCard').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('outputCard').scrollTop = 0;
     handleGenerate();
   });
 

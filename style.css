@@ -263,34 +263,156 @@ body {
 .settings-save { width: 100%; justify-content: center; margin-top: auto; }
 
 /* =========================================
-   Main Layout
+   Main Layout — Split panels
    ========================================= */
 .main {
-  padding: 1.75rem 1.25rem 3rem;
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
+  display: flex;
 }
 
-.container {
-  max-width: 760px;
-  margin: 0 auto;
+.split-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* Left panel — form */
+.left-panel {
+  width: 400px;
+  min-width: 300px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1.5rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+}
+
+/* Right panel — preview/output (always visible) */
+.right-panel {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 1.5rem 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* Panel header */
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.panel-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* Section labels inside right panel */
+.section-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+  gap: 0.5rem;
+}
+
+/* Edit section */
+.edit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Card gen row */
+.card-gen-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-sm);
+}
+
+.card-gen-hint {
+  font-size: 0.75rem;
+  color: #0369a1;
+}
+
+/* Canvas card section */
+.card-canvas-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+/* Manual section */
+.manual-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Image section header */
+.image-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
 }
 
 /* =========================================
-   Cards
+   Cards (kept for card-canvas-section inner use)
    ========================================= */
 .card {
   background: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 1.75rem;
+  padding: 1.25rem;
   border: 1px solid var(--border);
 }
 
-.card-header { margin-bottom: 1.5rem; }
-.card-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
-.card-sub { font-size: 0.83rem; color: var(--text-muted); margin-top: 0.25rem; }
+.card-header { margin-bottom: 1rem; }
+.card-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.card-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
 
 /* =========================================
    Form Elements
@@ -532,20 +654,19 @@ body {
 .radio-item input[type="radio"] { accent-color: var(--li-blue); cursor: pointer; }
 
 /* =========================================
-   Post Count Selector
+   Post Count Selector + Generate Row
    ========================================= */
 .generate-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
 }
 
 .post-count-selector {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -557,7 +678,7 @@ body {
 }
 
 .count-btn {
-  padding: 0.42rem 0.85rem;
+  padding: 0.42rem 0.7rem;
   background: #fff;
   border: none;
   border-right: 1.5px solid var(--border);
@@ -571,8 +692,6 @@ body {
 .count-btn:last-child { border-right: none; }
 .count-btn:hover { background: var(--li-blue-light); color: var(--li-blue); }
 .count-btn.active { background: var(--li-blue); color: #fff; }
-
-.generate-row .btn-generate { flex: 1; margin-top: 0; }
 
 /* =========================================
    Post Tabs
@@ -617,13 +736,13 @@ body {
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* =========================================
-   Post Actions Bar
+   Post Actions Bar (legacy — char count now in panel header)
    ========================================= */
 .post-actions-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 /* =========================================
@@ -670,19 +789,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  width: 100%;
-  padding: 0.85rem 1.5rem;
+  gap: 0.55rem;
+  flex: 1;
+  padding: 0.75rem 1rem;
   background: var(--li-blue);
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 1.5rem;
+  margin-top: 0;
   transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
   box-shadow: 0 2px 8px rgba(10,102,194,0.3);
+  white-space: nowrap;
 }
 .btn-generate:hover:not(:disabled) {
   background: var(--li-blue-dark);
@@ -719,7 +839,16 @@ body {
 }
 
 /* =========================================
-   Output Card
+   LinkedIn Preview placeholder
+   ========================================= */
+.lp-placeholder {
+  color: var(--text-light);
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
+/* =========================================
+   Output area (kept for backward compat)
    ========================================= */
 .output-header {
   display: flex;
@@ -727,7 +856,7 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .output-actions {
@@ -1039,77 +1168,42 @@ a { color: var(--li-blue); }
 /* =========================================
    Responsive
    ========================================= */
-@media (max-width: 600px) {
-  .header-inner { padding: 0 1rem; }
-  .main { padding: 1.25rem 0.75rem 2.5rem; }
-  .card { padding: 1.25rem; }
+
+/* Tablet */
+@media (max-width: 900px) {
+  .left-panel { width: 340px; }
+}
+
+/* Mobile: stack panels */
+@media (max-width: 700px) {
+  .main { height: auto; overflow: visible; }
+  .split-layout { flex-direction: column; }
+  .left-panel {
+    width: 100%;
+    min-width: unset;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem;
+  }
+  .right-panel { padding: 1.25rem; }
+  .panel-header { flex-direction: column; align-items: flex-start; }
+  .panel-header-actions { width: 100%; justify-content: flex-start; }
   .form-row { grid-template-columns: 1fr; }
   .provider-grid { grid-template-columns: repeat(2, 1fr); }
   .provider-badge { display: none; }
   .btn-settings span { display: none; }
   .btn-settings { padding: 0.45rem; }
-  .output-header { flex-direction: column; align-items: flex-start; }
   .tone-grid { gap: 0.35rem; }
   .toggles-row { gap: 0.75rem; }
-  .generate-row { flex-direction: column; }
-  .generate-row .btn-generate { width: 100%; }
+  .generate-row { flex-wrap: wrap; }
   .btn-gdocs span { display: none; }
   .btn-gdocs { padding: 0.42rem; }
   .btn-docx span { display: none; }
   .btn-docx { padding: 0.42rem; }
-}
-
-/* =========================================
-   Card Generate Button
-   ========================================= */
-.btn-card-gen {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  background: linear-gradient(135deg, #0891B2 0%, #0e7490 100%);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 1.5rem;
-  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
-  box-shadow: 0 2px 8px rgba(8,145,178,0.35);
-  white-space: nowrap;
-}
-.btn-card-gen:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0e7490 0%, #155e75 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(8,145,178,0.4);
-}
-.btn-card-gen:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-
-/* =========================================
-   Canvas Card Section
-   ========================================= */
-.card-canvas-wrapper {
-  position: relative;
-  width: 100%;
-}
-.card-canvas-wrapper canvas {
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-}
-.card-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 2rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  .card-gen-row { flex-direction: column; align-items: flex-start; }
 }
 
 @media (max-width: 380px) {
   .provider-grid { grid-template-columns: repeat(2, 1fr); }
+  .header-inner { padding: 0 0.75rem; }
 }
